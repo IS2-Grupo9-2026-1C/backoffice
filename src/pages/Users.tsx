@@ -1,14 +1,18 @@
 import { ChangeEvent, useMemo, useState } from 'react';
 import Button from '@/components/Button';
-import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
 import { CURRENT_ADMIN_ID, User, UserStatus, users as initialUsers } from '@/mocks';
 
 const PAGE_SIZE = 8;
 
-const STATUS_BADGE: Record<UserStatus, { label: string; bg: string; fg: string }> = {
-  active: { label: 'Activo', bg: '#D1FAE5', fg: '#047857' },
-  blocked: { label: 'Bloqueado', bg: '#FEE2E2', fg: '#B91C1C' },
+const STATUS_BADGE: Record<UserStatus, { label: string; className: string }> = {
+  active: { label: 'Activo', className: 'bg-emerald-100 text-emerald-700' },
+  blocked: { label: 'Bloqueado', className: 'bg-red-100 text-red-700' },
 };
+
+const thClass =
+  'px-4 py-[10px] text-left text-xs font-semibold uppercase tracking-[0.4px] text-gray-500 bg-gray-50 border-b border-gray-200';
+const tdClass = 'p-4 align-middle text-gray-900';
+const badgeClass = 'inline-block px-[10px] py-1 rounded-full text-xs font-semibold';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-AR', {
@@ -50,34 +54,34 @@ export default function Users() {
   }
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>Usuarios</h1>
-        <p style={styles.subtitle}>Administrá los usuarios de la plataforma.</p>
+    <div className="flex flex-col gap-6 p-8">
+      <header className="flex flex-col gap-1">
+        <h1 className="m-0 text-[32px] font-bold text-gray-900">Usuarios</h1>
+        <p className="m-0 text-base text-gray-500">Administrá los usuarios de la plataforma.</p>
       </header>
 
-      <section style={styles.toolbar}>
+      <section className="flex items-center gap-4">
         <input
-          style={styles.search}
+          className="flex-1 max-w-[360px] rounded-[10px] border border-gray-200 bg-gray-50 px-4 py-[10px] text-sm text-gray-900 outline-none"
           placeholder="Buscar por nombre o email..."
           value={query}
           onChange={handleSearch}
         />
-        <span style={styles.count}>
+        <span className="text-sm text-gray-500">
           {filtered.length} resultado{filtered.length === 1 ? '' : 's'}
         </span>
       </section>
 
-      <section style={styles.tableWrapper}>
-        <table style={styles.table}>
+      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th style={styles.th}>Nombre</th>
-              <th style={styles.th}>Email</th>
-              <th style={styles.th}>Rol</th>
-              <th style={styles.th}>Fecha de registro</th>
-              <th style={styles.th}>Estado</th>
-              <th style={{ ...styles.th, textAlign: 'right' }}>Acciones</th>
+              <th className={thClass}>Nombre</th>
+              <th className={thClass}>Email</th>
+              <th className={thClass}>Rol</th>
+              <th className={thClass}>Fecha de registro</th>
+              <th className={thClass}>Estado</th>
+              <th className={`${thClass} text-right`}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -85,23 +89,25 @@ export default function Users() {
               const badge = STATUS_BADGE[user.status];
               const isSelf = user.id === CURRENT_ADMIN_ID;
               return (
-                <tr key={user.id} style={styles.tr}>
-                  <td style={styles.td}>{user.name}</td>
-                  <td style={{ ...styles.td, color: Colors.textSecondary }}>{user.email}</td>
-                  <td style={styles.td}>
-                    <span style={user.role === 'admin' ? styles.roleAdmin : styles.roleUser}>
+                <tr key={user.id} className="border-b border-gray-200">
+                  <td className={tdClass}>{user.name}</td>
+                  <td className={`${tdClass} text-gray-500`}>{user.email}</td>
+                  <td className={tdClass}>
+                    <span
+                      className={
+                        user.role === 'admin'
+                          ? 'inline-block rounded-md bg-[#EEF2FF] px-2 py-[2px] text-xs font-semibold capitalize text-indigo-600'
+                          : 'inline-block rounded-md px-2 py-[2px] text-xs font-medium capitalize text-gray-500'
+                      }
+                    >
                       {user.role === 'admin' ? 'admin' : 'usuario'}
                     </span>
                   </td>
-                  <td style={{ ...styles.td, color: Colors.textSecondary }}>
-                    {formatDate(user.registeredAt)}
+                  <td className={`${tdClass} text-gray-500`}>{formatDate(user.registeredAt)}</td>
+                  <td className={tdClass}>
+                    <span className={`${badgeClass} ${badge.className}`}>{badge.label}</span>
                   </td>
-                  <td style={styles.td}>
-                    <span style={{ ...styles.badge, backgroundColor: badge.bg, color: badge.fg }}>
-                      {badge.label}
-                    </span>
-                  </td>
-                  <td style={{ ...styles.td, textAlign: 'right' }}>
+                  <td className={`${tdClass} text-right`}>
                     <Button
                       size="sm"
                       variant={user.status === 'active' ? 'outlineDanger' : 'outlinePrimary'}
@@ -117,7 +123,7 @@ export default function Users() {
             })}
             {slice.length === 0 && (
               <tr>
-                <td style={styles.empty} colSpan={6}>
+                <td className="p-8 text-center text-sm text-gray-500" colSpan={6}>
                   No hay usuarios que coincidan con la búsqueda.
                 </td>
               </tr>
@@ -126,23 +132,23 @@ export default function Users() {
         </table>
       </section>
 
-      <section style={styles.pagination}>
+      <section className="flex items-center justify-end gap-4">
         <Button
           size="sm"
           variant="outline"
-          style={styles.pageBtn}
+          className="font-medium"
           disabled={currentPage === 1}
           onClick={() => setPage((p) => p - 1)}
         >
           ← Anterior
         </Button>
-        <span style={styles.pageInfo}>
+        <span className="text-sm text-gray-500">
           Página {currentPage} de {totalPages}
         </span>
         <Button
           size="sm"
           variant="outline"
-          style={styles.pageBtn}
+          className="font-medium"
           disabled={currentPage === totalPages}
           onClick={() => setPage((p) => p + 1)}
         >
@@ -152,123 +158,3 @@ export default function Users() {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    padding: Spacing.xl,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: Spacing.lg,
-  },
-  header: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: Spacing.xs,
-  },
-  title: {
-    margin: 0,
-    fontSize: FontSize.xxl,
-    fontWeight: 700,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
-  },
-  toolbar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  search: {
-    flex: 1,
-    maxWidth: 360,
-    backgroundColor: Colors.background,
-    border: `1px solid ${Colors.border}`,
-    borderRadius: BorderRadius.md,
-    padding: `${Spacing.sm + 2}px ${Spacing.md}px`,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-    outline: 'none',
-  },
-  count: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-  tableWrapper: {
-    backgroundColor: Colors.surface,
-    border: `1px solid ${Colors.border}`,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: FontSize.sm,
-  },
-  th: {
-    textAlign: 'left',
-    padding: `${Spacing.sm + 2}px ${Spacing.md}px`,
-    fontSize: 12,
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    color: Colors.textSecondary,
-    backgroundColor: Colors.background,
-    borderBottom: `1px solid ${Colors.border}`,
-  },
-  tr: {
-    borderBottom: `1px solid ${Colors.border}`,
-  },
-  td: {
-    padding: `${Spacing.md}px`,
-    color: Colors.textPrimary,
-    verticalAlign: 'middle',
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 600,
-  },
-  roleAdmin: {
-    display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: BorderRadius.sm,
-    fontSize: 12,
-    fontWeight: 600,
-    color: Colors.primary,
-    backgroundColor: '#EEF2FF',
-    textTransform: 'capitalize',
-  },
-  roleUser: {
-    display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: BorderRadius.sm,
-    fontSize: 12,
-    fontWeight: 500,
-    color: Colors.textSecondary,
-    textTransform: 'capitalize',
-  },
-  empty: {
-    padding: Spacing.xl,
-    textAlign: 'center',
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-  },
-  pagination: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: Spacing.md,
-  },
-  pageBtn: {
-    fontWeight: 500,
-  },
-  pageInfo: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-};

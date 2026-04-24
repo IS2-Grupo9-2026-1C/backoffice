@@ -1,93 +1,45 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import Button from '@/components/Button';
-import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
 
 const navItems = [
   { to: '/users', label: 'Usuarios' },
   { to: '/items', label: 'Items' },
 ];
 
+const navItemBase =
+  'block px-4 py-[10px] rounded-[10px] text-base font-medium text-gray-500 transition-[background-color,color] duration-[120ms]';
+const navItemActive = 'bg-gray-100 text-indigo-600 font-semibold';
+
 export default function Sidebar() {
   const navigate = useNavigate();
 
   return (
-    <aside style={styles.sidebar}>
-      <div style={styles.brand}>
-        <img src="/bazaar.svg" alt="Bazaar" style={styles.brandLogo} />
-        <span style={styles.brandSuffix}>Admin</span>
+    <aside className="flex w-60 flex-col gap-6 border-r border-gray-200 bg-white p-6">
+      <div className="flex items-center gap-2 border-b border-gray-200 pb-4">
+        <img src="/bazaar.svg" alt="Bazaar" className="block h-[22px] w-auto" />
+        <span className="text-lg font-bold text-[#453de0]">Admin</span>
       </div>
 
-      <nav style={styles.nav}>
+      <nav className="flex flex-1 flex-col gap-1">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
-            style={({ isActive }) => ({
-              ...styles.navItem,
-              ...(isActive ? styles.navItemActive : {}),
-            })}
+            className={({ isActive }) => `${navItemBase} ${isActive ? navItemActive : ''}`}
           >
             {item.label}
           </NavLink>
         ))}
       </nav>
 
-      <Button size="sm" variant="outline" style={styles.logout} onClick={() => navigate('/login')}>
+      <Button
+        size="sm"
+        variant="outline"
+        className="font-semibold text-gray-500"
+        onClick={() => navigate('/login')}
+      >
         Cerrar sesión
       </Button>
     </aside>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  sidebar: {
-    width: 240,
-    backgroundColor: Colors.surface,
-    borderRight: `1px solid ${Colors.border}`,
-    padding: Spacing.lg,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: Spacing.lg,
-  },
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingBottom: Spacing.md,
-    borderBottom: `1px solid ${Colors.border}`,
-  },
-  brandLogo: {
-    height: 22,
-    width: 'auto',
-    display: 'block',
-  },
-  brandSuffix: {
-    fontSize: FontSize.lg,
-    fontWeight: 700,
-    color: '#453de0',
-  },
-  nav: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: Spacing.xs,
-    flex: 1,
-  },
-  navItem: {
-    display: 'block',
-    padding: `${Spacing.sm + 2}px ${Spacing.md}px`,
-    borderRadius: BorderRadius.md,
-    fontSize: FontSize.md,
-    fontWeight: 500,
-    color: Colors.textSecondary,
-    transition: 'background-color 120ms, color 120ms',
-  },
-  navItemActive: {
-    backgroundColor: Colors.inputBackground,
-    color: Colors.primary,
-    fontWeight: 600,
-  },
-  logout: {
-    fontWeight: 600,
-    color: Colors.textSecondary,
-  },
-};

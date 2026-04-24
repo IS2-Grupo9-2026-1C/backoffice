@@ -1,26 +1,13 @@
 import { Outlet } from 'react-router-dom';
-import { Colors } from '@/theme';
 import Sidebar from '@/components/Sidebar';
 
 export default function Layout() {
   return (
-    <div style={styles.shell}>
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main style={styles.main}>
+      <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  shell: {
-    display: 'flex',
-    minHeight: '100vh',
-    backgroundColor: Colors.background,
-  },
-  main: {
-    flex: 1,
-    overflowY: 'auto',
-  },
-};

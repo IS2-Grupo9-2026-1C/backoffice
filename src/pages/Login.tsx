@@ -1,7 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '@/components/Button';
-import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,20 +12,23 @@ export default function Login() {
     navigate('/users');
   }
 
+  const inputClass =
+    'rounded-[10px] border border-gray-200 bg-gray-100 px-4 py-3 text-base text-gray-900 outline-none';
+
   return (
-    <div style={styles.screen}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <div style={styles.brand}>
-            <img src="/bazaar.svg" alt="Bazaar" style={styles.brandLogo} />
-            <span style={styles.brandSuffix}>Admin</span>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-[420px] rounded-2xl border border-gray-200 bg-white p-8 shadow-[0_1px_3px_rgba(17,24,39,0.04),0_4px_12px_rgba(17,24,39,0.04)]">
+        <div className="mb-8">
+          <div className="mb-1 flex items-center gap-2">
+            <img src="/bazaar.svg" alt="Bazaar" className="block h-8 w-auto" />
+            <span className="text-2xl font-bold text-[#453de0]">Admin</span>
           </div>
-          <p style={styles.subtitle}>Iniciá sesión para continuar</p>
+          <p className="m-0 text-base text-gray-500">Iniciá sesión para continuar</p>
         </div>
 
-        <form style={styles.form} onSubmit={handleSubmit}>
-          <div style={styles.field}>
-            <label style={styles.label} htmlFor="email">
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-900" htmlFor="email">
               Email
             </label>
             <input
@@ -36,12 +38,12 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@email.com"
               autoComplete="email"
-              style={styles.input}
+              className={inputClass}
             />
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label} htmlFor="password">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-900" htmlFor="password">
               Contraseña
             </label>
             <input
@@ -51,11 +53,11 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               autoComplete="current-password"
-              style={styles.input}
+              className={inputClass}
             />
           </div>
 
-          <Button type="submit" variant="primary" fullWidth style={styles.button}>
+          <Button type="submit" variant="primary" fullWidth className="mt-2">
             Ingresar
           </Button>
         </form>
@@ -63,74 +65,3 @@ export default function Login() {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  screen: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.background,
-    padding: Spacing.lg,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    border: `1px solid ${Colors.border}`,
-    padding: Spacing.xl,
-    boxShadow: '0 1px 3px rgba(17, 24, 39, 0.04), 0 4px 12px rgba(17, 24, 39, 0.04)',
-  },
-  header: {
-    marginBottom: Spacing.xl,
-  },
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.xs,
-  },
-  brandLogo: {
-    height: 32,
-    width: 'auto',
-    display: 'block',
-  },
-  brandSuffix: {
-    fontSize: FontSize.xl,
-    fontWeight: 700,
-    color: '#453de0',
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: Spacing.md,
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: Spacing.xs,
-  },
-  label: {
-    fontSize: FontSize.sm,
-    fontWeight: 600,
-    color: Colors.textPrimary,
-  },
-  input: {
-    backgroundColor: Colors.inputBackground,
-    border: `1px solid ${Colors.border}`,
-    borderRadius: BorderRadius.md,
-    padding: `${Spacing.sm + 4}px ${Spacing.md}px`,
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-    outline: 'none',
-  },
-  button: {
-    marginTop: Spacing.sm,
-  },
-};

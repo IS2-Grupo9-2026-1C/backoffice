@@ -1,5 +1,4 @@
-import { ButtonHTMLAttributes, CSSProperties } from 'react';
-import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
+import { ButtonHTMLAttributes } from 'react';
 
 type ButtonVariant = 'primary' | 'outline' | 'outlinePrimary' | 'outlineDanger';
 type ButtonSize = 'sm' | 'md';
@@ -10,76 +9,38 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   fullWidth?: boolean;
 };
 
+const base =
+  'border border-transparent rounded-[10px] font-semibold transition-[opacity,background-color,color,border-color] duration-[120ms] disabled:opacity-40 disabled:cursor-not-allowed';
+
+const bySize: Record<ButtonSize, string> = {
+  sm: 'px-4 py-2 text-sm',
+  md: 'p-4 text-base',
+};
+
+const byVariant: Record<ButtonVariant, string> = {
+  primary: 'bg-indigo-600 text-white border-indigo-600',
+  outline: 'bg-white text-gray-900 border-gray-200',
+  outlinePrimary: 'bg-transparent text-indigo-600 border-indigo-600',
+  outlineDanger: 'bg-transparent text-red-600 border-red-600',
+};
+
 export default function Button({
   variant = 'outline',
   size = 'md',
   fullWidth = false,
-  style,
+  className,
   type = 'button',
   ...rest
 }: Props) {
-  const mergedStyle: CSSProperties = {
-    ...styles.base,
-    ...styles.bySize[size],
-    ...styles.byVariant[variant],
-    ...(fullWidth ? styles.fullWidth : {}),
-    ...(rest.disabled ? styles.disabled : {}),
-    ...style,
-  };
+  const merged = [
+    base,
+    bySize[size],
+    byVariant[variant],
+    fullWidth ? 'w-full' : '',
+    className ?? '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-  return <button type={type} style={mergedStyle} {...rest} />;
+  return <button type={type} className={merged} {...rest} />;
 }
-
-const styles: {
-  base: CSSProperties;
-  fullWidth: CSSProperties;
-  disabled: CSSProperties;
-  bySize: Record<ButtonSize, CSSProperties>;
-  byVariant: Record<ButtonVariant, CSSProperties>;
-} = {
-  base: {
-    border: '1px solid transparent',
-    borderRadius: BorderRadius.md,
-    fontWeight: 600,
-    transition: 'opacity 120ms, background-color 120ms, color 120ms, border-color 120ms',
-  },
-  fullWidth: {
-    width: '100%',
-  },
-  disabled: {
-    opacity: 0.4,
-    cursor: 'not-allowed',
-  },
-  bySize: {
-    sm: {
-      padding: `${Spacing.sm}px ${Spacing.md}px`,
-      fontSize: FontSize.sm,
-    },
-    md: {
-      padding: `${Spacing.md}px`,
-      fontSize: FontSize.md,
-    },
-  },
-  byVariant: {
-    primary: {
-      backgroundColor: Colors.primary,
-      color: '#FFFFFF',
-      borderColor: Colors.primary,
-    },
-    outline: {
-      backgroundColor: Colors.surface,
-      color: Colors.textPrimary,
-      borderColor: Colors.border,
-    },
-    outlinePrimary: {
-      backgroundColor: 'transparent',
-      color: Colors.primary,
-      borderColor: Colors.primary,
-    },
-    outlineDanger: {
-      backgroundColor: 'transparent',
-      color: Colors.error,
-      borderColor: Colors.error,
-    },
-  },
-};

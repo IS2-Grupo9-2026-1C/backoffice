@@ -1,24 +1,21 @@
 import { ChangeEvent, useMemo, useState } from 'react';
 import Button from '@/components/Button';
-import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
 import { Item, ItemStatus, User, items as initialItems, users } from '@/mocks';
 
 const PAGE_SIZE = 8;
 
 type FiltroEstado = 'todos' | ItemStatus;
 
-const STATUS_BADGE: Record<ItemStatus, { label: string; bg: string; fg: string }> = {
-  active: { label: 'Activo', bg: '#D1FAE5', fg: '#047857' },
-  out_of_stock: { label: 'Sin stock', bg: '#F3F4F6', fg: '#4B5563' },
+const STATUS_BADGE: Record<ItemStatus, { label: string; className: string }> = {
+  active: { label: 'Activo', className: 'bg-emerald-100 text-emerald-700' },
+  out_of_stock: { label: 'Sin stock', className: 'bg-gray-100 text-gray-600' },
   disabled_by_seller: {
     label: 'Deshabilitado por vendedor',
-    bg: '#FEF3C7',
-    fg: '#B45309',
+    className: 'bg-amber-100 text-amber-700',
   },
   disabled_by_admin: {
     label: 'Deshabilitado por admin',
-    bg: '#FEE2E2',
-    fg: '#B91C1C',
+    className: 'bg-red-100 text-red-700',
   },
 };
 
@@ -29,6 +26,12 @@ const FILTER_OPTIONS: { value: FiltroEstado; label: string }[] = [
   { value: 'disabled_by_seller', label: 'Deshabilitados por vendedor' },
   { value: 'disabled_by_admin', label: 'Deshabilitados por admin' },
 ];
+
+const thClass =
+  'px-4 py-[10px] text-left text-xs font-semibold uppercase tracking-[0.4px] text-gray-500 bg-gray-50 border-b border-gray-200';
+const tdClass = 'p-4 align-middle text-gray-900';
+const badgeClass =
+  'inline-block whitespace-nowrap px-[10px] py-1 rounded-full text-xs font-semibold';
 
 function formatPrice(n: number): string {
   return n.toLocaleString('es-AR', {
@@ -79,35 +82,39 @@ export default function Items() {
   }
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>Items</h1>
-        <p style={styles.subtitle}>Administrá los items de la plataforma.</p>
+    <div className="flex flex-col gap-6 p-8">
+      <header className="flex flex-col gap-1">
+        <h1 className="m-0 text-[32px] font-bold text-gray-900">Items</h1>
+        <p className="m-0 text-base text-gray-500">Administrá los items de la plataforma.</p>
       </header>
 
-      <section style={styles.toolbar}>
-        <select style={styles.filter} value={filtro} onChange={handleFilter}>
+      <section className="flex items-center gap-4">
+        <select
+          className="min-w-[240px] rounded-[10px] border border-gray-200 bg-gray-50 px-4 py-[10px] text-sm text-gray-900 outline-none"
+          value={filtro}
+          onChange={handleFilter}
+        >
           {FILTER_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
         </select>
-        <span style={styles.count}>
+        <span className="text-sm text-gray-500">
           {filtered.length} resultado{filtered.length === 1 ? '' : 's'}
         </span>
       </section>
 
-      <section style={styles.tableWrapper}>
-        <table style={styles.table}>
+      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th style={styles.th}>Nombre</th>
-              <th style={styles.th}>Vendedor</th>
-              <th style={{ ...styles.th, textAlign: 'right' }}>Precio</th>
-              <th style={{ ...styles.th, textAlign: 'right' }}>Stock</th>
-              <th style={styles.th}>Estado</th>
-              <th style={{ ...styles.th, textAlign: 'right' }}>Acciones</th>
+              <th className={thClass}>Nombre</th>
+              <th className={thClass}>Vendedor</th>
+              <th className={`${thClass} text-right`}>Precio</th>
+              <th className={`${thClass} text-right`}>Stock</th>
+              <th className={thClass}>Estado</th>
+              <th className={`${thClass} text-right`}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -116,32 +123,23 @@ export default function Items() {
               const seller = sellersById.get(item.sellerId);
               const isDisabledByAdmin = item.status === 'disabled_by_admin';
               return (
-                <tr key={item.id} style={styles.tr}>
-                  <td style={styles.td}>{item.name}</td>
-                  <td style={{ ...styles.td, color: Colors.textSecondary }}>
-                    {seller?.name ?? '—'}
-                  </td>
-                  <td
-                    style={{ ...styles.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
-                  >
+                <tr key={item.id} className="border-b border-gray-200">
+                  <td className={tdClass}>{item.name}</td>
+                  <td className={`${tdClass} text-gray-500`}>{seller?.name ?? '—'}</td>
+                  <td className={`${tdClass} text-right tabular-nums`}>
                     {formatPrice(item.price)}
                   </td>
                   <td
-                    style={{
-                      ...styles.td,
-                      textAlign: 'right',
-                      color: item.stock === 0 ? Colors.textSecondary : Colors.textPrimary,
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
+                    className={`${tdClass} text-right tabular-nums ${
+                      item.stock === 0 ? 'text-gray-500' : 'text-gray-900'
+                    }`}
                   >
                     {item.stock}
                   </td>
-                  <td style={styles.td}>
-                    <span style={{ ...styles.badge, backgroundColor: badge.bg, color: badge.fg }}>
-                      {badge.label}
-                    </span>
+                  <td className={tdClass}>
+                    <span className={`${badgeClass} ${badge.className}`}>{badge.label}</span>
                   </td>
-                  <td style={{ ...styles.td, textAlign: 'right' }}>
+                  <td className={`${tdClass} text-right`}>
                     <Button
                       size="sm"
                       variant={isDisabledByAdmin ? 'outlinePrimary' : 'outlineDanger'}
@@ -155,7 +153,7 @@ export default function Items() {
             })}
             {slice.length === 0 && (
               <tr>
-                <td style={styles.empty} colSpan={6}>
+                <td className="p-8 text-center text-sm text-gray-500" colSpan={6}>
                   No hay items con ese estado.
                 </td>
               </tr>
@@ -164,23 +162,23 @@ export default function Items() {
         </table>
       </section>
 
-      <section style={styles.pagination}>
+      <section className="flex items-center justify-end gap-4">
         <Button
           size="sm"
           variant="outline"
-          style={styles.pageBtn}
+          className="font-medium"
           disabled={currentPage === 1}
           onClick={() => setPage((p) => p - 1)}
         >
           ← Anterior
         </Button>
-        <span style={styles.pageInfo}>
+        <span className="text-sm text-gray-500">
           Página {currentPage} de {totalPages}
         </span>
         <Button
           size="sm"
           variant="outline"
-          style={styles.pageBtn}
+          className="font-medium"
           disabled={currentPage === totalPages}
           onClick={() => setPage((p) => p + 1)}
         >
@@ -190,104 +188,3 @@ export default function Items() {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    padding: Spacing.xl,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: Spacing.lg,
-  },
-  header: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: Spacing.xs,
-  },
-  title: {
-    margin: 0,
-    fontSize: FontSize.xxl,
-    fontWeight: 700,
-    color: Colors.textPrimary,
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
-  },
-  toolbar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  filter: {
-    backgroundColor: Colors.background,
-    border: `1px solid ${Colors.border}`,
-    borderRadius: BorderRadius.md,
-    padding: `${Spacing.sm + 2}px ${Spacing.md}px`,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-    outline: 'none',
-    minWidth: 240,
-  },
-  count: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-  tableWrapper: {
-    backgroundColor: Colors.surface,
-    border: `1px solid ${Colors.border}`,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: FontSize.sm,
-  },
-  th: {
-    textAlign: 'left',
-    padding: `${Spacing.sm + 2}px ${Spacing.md}px`,
-    fontSize: 12,
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    color: Colors.textSecondary,
-    backgroundColor: Colors.background,
-    borderBottom: `1px solid ${Colors.border}`,
-  },
-  tr: {
-    borderBottom: `1px solid ${Colors.border}`,
-  },
-  td: {
-    padding: `${Spacing.md}px`,
-    color: Colors.textPrimary,
-    verticalAlign: 'middle',
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 600,
-    whiteSpace: 'nowrap',
-  },
-  empty: {
-    padding: Spacing.xl,
-    textAlign: 'center',
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-  },
-  pagination: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: Spacing.md,
-  },
-  pageBtn: {
-    fontWeight: 500,
-  },
-  pageInfo: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-};

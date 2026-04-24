@@ -1,20 +1,20 @@
 import { ChangeEvent, useMemo, useState } from 'react';
 import { BorderRadius, Colors, FontSize, Spacing } from '../theme';
-import { EstadoItem, Item, Usuario, items as initialItems, usuarios } from '../mocks';
+import { Item, ItemStatus, User, items as initialItems, users } from '../mocks';
 
 const PAGE_SIZE = 8;
 
-type FiltroEstado = 'todos' | EstadoItem;
+type FiltroEstado = 'todos' | ItemStatus;
 
-const STATUS_BADGE: Record<EstadoItem, { label: string; bg: string; fg: string }> = {
-  activo: { label: 'Activo', bg: '#D1FAE5', fg: '#047857' },
-  sin_stock: { label: 'Sin stock', bg: '#F3F4F6', fg: '#4B5563' },
-  deshabilitado_vendedor: {
+const STATUS_BADGE: Record<ItemStatus, { label: string; bg: string; fg: string }> = {
+  active: { label: 'Activo', bg: '#D1FAE5', fg: '#047857' },
+  out_of_stock: { label: 'Sin stock', bg: '#F3F4F6', fg: '#4B5563' },
+  disabled_by_seller: {
     label: 'Deshabilitado por vendedor',
     bg: '#FEF3C7',
     fg: '#B45309',
   },
-  deshabilitado_admin: {
+  disabled_by_admin: {
     label: 'Deshabilitado por admin',
     bg: '#FEE2E2',
     fg: '#B91C1C',
@@ -23,10 +23,10 @@ const STATUS_BADGE: Record<EstadoItem, { label: string; bg: string; fg: string }
 
 const FILTER_OPTIONS: { value: FiltroEstado; label: string }[] = [
   { value: 'todos', label: 'Todos los estados' },
-  { value: 'activo', label: 'Activos' },
-  { value: 'sin_stock', label: 'Sin stock' },
-  { value: 'deshabilitado_vendedor', label: 'Deshabilitados por vendedor' },
-  { value: 'deshabilitado_admin', label: 'Deshabilitados por admin' },
+  { value: 'active', label: 'Activos' },
+  { value: 'out_of_stock', label: 'Sin stock' },
+  { value: 'disabled_by_seller', label: 'Deshabilitados por vendedor' },
+  { value: 'disabled_by_admin', label: 'Deshabilitados por admin' },
 ];
 
 function formatPrice(n: number): string {
@@ -43,14 +43,14 @@ export default function Items() {
   const [page, setPage] = useState(1);
 
   const sellersById = useMemo(() => {
-    const m = new Map<string, Usuario>();
-    usuarios.forEach((u) => m.set(u.id, u));
+    const m = new Map<string, User>();
+    users.forEach((u) => m.set(u.id, u));
     return m;
   }, []);
 
   const filtered = useMemo(() => {
     if (filtro === 'todos') return list;
-    return list.filter((i) => i.estado === filtro);
+    return list.filter((i) => i.status === filtro);
   }, [list, filtro]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -66,13 +66,13 @@ export default function Items() {
     setList((prev) =>
       prev.map((x) => {
         if (x.id !== item.id) return x;
-        const nuevoEstado: EstadoItem =
-          x.estado === 'deshabilitado_admin'
+        const newStatus: ItemStatus =
+          x.status === 'disabled_by_admin'
             ? x.stock === 0
-              ? 'sin_stock'
-              : 'activo'
-            : 'deshabilitado_admin';
-        return { ...x, estado: nuevoEstado };
+              ? 'out_of_stock'
+              : 'active'
+            : 'disabled_by_admin';
+        return { ...x, status: newStatus };
       }),
     );
   }
@@ -111,19 +111,19 @@ export default function Items() {
           </thead>
           <tbody>
             {slice.map((item) => {
-              const badge = STATUS_BADGE[item.estado];
-              const vendedor = sellersById.get(item.vendedorId);
-              const esDeshabilitadoPorAdmin = item.estado === 'deshabilitado_admin';
+              const badge = STATUS_BADGE[item.status];
+              const seller = sellersById.get(item.sellerId);
+              const isDisabledByAdmin = item.status === 'disabled_by_admin';
               return (
                 <tr key={item.id} style={styles.tr}>
-                  <td style={styles.td}>{item.nombre}</td>
+                  <td style={styles.td}>{item.name}</td>
                   <td style={{ ...styles.td, color: Colors.textSecondary }}>
-                    {vendedor?.nombre ?? '—'}
+                    {seller?.name ?? '—'}
                   </td>
                   <td
                     style={{ ...styles.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
                   >
-                    {formatPrice(item.precio)}
+                    {formatPrice(item.price)}
                   </td>
                   <td
                     style={{
@@ -144,13 +144,11 @@ export default function Items() {
                     <button
                       style={{
                         ...styles.actionBtn,
-                        ...(esDeshabilitadoPorAdmin
-                          ? styles.actionBtnPrimary
-                          : styles.actionBtnDanger),
+                        ...(isDisabledByAdmin ? styles.actionBtnPrimary : styles.actionBtnDanger),
                       }}
                       onClick={() => toggleAdminStatus(item)}
                     >
-                      {esDeshabilitadoPorAdmin ? 'Rehabilitar' : 'Deshabilitar'}
+                      {isDisabledByAdmin ? 'Rehabilitar' : 'Deshabilitar'}
                     </button>
                   </td>
                 </tr>

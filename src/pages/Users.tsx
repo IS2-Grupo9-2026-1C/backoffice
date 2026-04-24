@@ -1,4 +1,5 @@
 import { ChangeEvent, useMemo, useState } from 'react';
+import Button from '../components/Button';
 import { BorderRadius, Colors, FontSize, Spacing } from '../theme';
 import { CURRENT_ADMIN_ID, User, UserStatus, users as initialUsers } from '../mocks';
 
@@ -101,20 +102,15 @@ export default function Users() {
                     </span>
                   </td>
                   <td style={{ ...styles.td, textAlign: 'right' }}>
-                    <button
-                      style={{
-                        ...styles.actionBtn,
-                        ...(user.status === 'active'
-                          ? styles.actionBtnDanger
-                          : styles.actionBtnPrimary),
-                        ...(isSelf ? styles.actionBtnDisabled : {}),
-                      }}
+                    <Button
+                      size="sm"
+                      variant={user.status === 'active' ? 'outlineDanger' : 'outlinePrimary'}
                       disabled={isSelf}
                       title={isSelf ? 'No podés bloquear tu propia cuenta' : ''}
                       onClick={() => toggleStatus(user)}
                     >
                       {user.status === 'active' ? 'Bloquear' : 'Desbloquear'}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               );
@@ -131,26 +127,27 @@ export default function Users() {
       </section>
 
       <section style={styles.pagination}>
-        <button
-          style={{ ...styles.pageBtn, ...(currentPage === 1 ? styles.pageBtnDisabled : {}) }}
+        <Button
+          size="sm"
+          variant="outline"
+          style={styles.pageBtn}
           disabled={currentPage === 1}
           onClick={() => setPage((p) => p - 1)}
         >
           ← Anterior
-        </button>
+        </Button>
         <span style={styles.pageInfo}>
           Página {currentPage} de {totalPages}
         </span>
-        <button
-          style={{
-            ...styles.pageBtn,
-            ...(currentPage === totalPages ? styles.pageBtnDisabled : {}),
-          }}
+        <Button
+          size="sm"
+          variant="outline"
+          style={styles.pageBtn}
           disabled={currentPage === totalPages}
           onClick={() => setPage((p) => p + 1)}
         >
           Siguiente →
-        </button>
+        </Button>
       </section>
     </div>
   );
@@ -255,26 +252,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: Colors.textSecondary,
     textTransform: 'capitalize',
   },
-  actionBtn: {
-    border: '1px solid transparent',
-    borderRadius: BorderRadius.sm,
-    padding: '6px 12px',
-    fontSize: 13,
-    fontWeight: 600,
-    backgroundColor: 'transparent',
-  },
-  actionBtnPrimary: {
-    color: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  actionBtnDanger: {
-    color: Colors.error,
-    borderColor: Colors.error,
-  },
-  actionBtnDisabled: {
-    opacity: 0.35,
-    cursor: 'not-allowed',
-  },
   empty: {
     padding: Spacing.xl,
     textAlign: 'center',
@@ -288,17 +265,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: Spacing.md,
   },
   pageBtn: {
-    backgroundColor: Colors.surface,
-    border: `1px solid ${Colors.border}`,
-    borderRadius: BorderRadius.md,
-    padding: `${Spacing.sm}px ${Spacing.md}px`,
-    fontSize: FontSize.sm,
     fontWeight: 500,
-    color: Colors.textPrimary,
-  },
-  pageBtnDisabled: {
-    opacity: 0.4,
-    cursor: 'not-allowed',
   },
   pageInfo: {
     fontSize: FontSize.sm,

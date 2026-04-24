@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
+import Button from './Button';
 import { BorderRadius, Colors, FontSize, Spacing } from '../theme';
 
 const navItems = [
@@ -31,9 +32,9 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <button style={styles.logout} onClick={() => navigate('/login')}>
+      <Button size="sm" variant="outline" style={styles.logout} onClick={() => navigate('/login')}>
         Cerrar sesión
-      </button>
+      </Button>
     </aside>
   );
 }
@@ -86,11 +87,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   logout: {
-    backgroundColor: 'transparent',
-    border: `1px solid ${Colors.border}`,
-    borderRadius: BorderRadius.md,
-    padding: `${Spacing.sm + 2}px ${Spacing.md}px`,
-    fontSize: FontSize.sm,
     fontWeight: 600,
     color: Colors.textSecondary,
   },

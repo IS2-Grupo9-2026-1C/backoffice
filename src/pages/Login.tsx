@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Button from '../components/Button';
 import { BorderRadius, Colors, FontSize, Spacing } from '../theme';
 
 export default function Login() {
@@ -54,9 +55,9 @@ export default function Login() {
             />
           </div>
 
-          <button type="submit" style={styles.button}>
+          <Button type="submit" variant="primary" fullWidth style={styles.button}>
             Ingresar
-          </button>
+          </Button>
         </form>
       </div>
     </div>
@@ -130,13 +131,6 @@ const styles: Record<string, React.CSSProperties> = {
     outline: 'none',
   },
   button: {
-    backgroundColor: Colors.primary,
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: BorderRadius.md,
-    padding: `${Spacing.md}px`,
-    fontSize: FontSize.md,
-    fontWeight: 600,
     marginTop: Spacing.sm,
   },
 };

@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import Login from './pages/Login';
-import Users from './pages/Users';
-import Items from './pages/Items';
-import Layout from './components/Layout';
+import Login from '@/pages/Login';
+import Users from '@/pages/Users';
+import Items from '@/pages/Items';
+import Layout from '@/components/Layout';
 
 export default function App() {
   return (

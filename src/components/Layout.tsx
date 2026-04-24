@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
-import { Colors } from '../theme';
-import Sidebar from './Sidebar';
+import { Colors } from '@/theme';
+import Sidebar from '@/components/Sidebar';
 
 export default function Layout() {
   return (

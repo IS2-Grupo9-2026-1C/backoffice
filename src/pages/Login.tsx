@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../components/Button';
-import { BorderRadius, Colors, FontSize, Spacing } from '../theme';
+import Button from '@/components/Button';
+import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
 
 export default function Login() {
   const navigate = useNavigate();

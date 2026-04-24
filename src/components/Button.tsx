@@ -1,5 +1,5 @@
 import { ButtonHTMLAttributes, CSSProperties } from 'react';
-import { BorderRadius, Colors, FontSize, Spacing } from '../theme';
+import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
 
 type ButtonVariant = 'primary' | 'outline' | 'outlinePrimary' | 'outlineDanger';
 type ButtonSize = 'sm' | 'md';

@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import Button from './Button';
-import { BorderRadius, Colors, FontSize, Spacing } from '../theme';
+import Button from '@/components/Button';
+import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
 
 const navItems = [
   { to: '/users', label: 'Usuarios' },

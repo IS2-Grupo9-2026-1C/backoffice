@@ -1,7 +1,7 @@
 import { ChangeEvent, useMemo, useState } from 'react';
-import Button from '../components/Button';
-import { BorderRadius, Colors, FontSize, Spacing } from '../theme';
-import { Item, ItemStatus, User, items as initialItems, users } from '../mocks';
+import Button from '@/components/Button';
+import { BorderRadius, Colors, FontSize, Spacing } from '@/theme';
+import { Item, ItemStatus, User, items as initialItems, users } from '@/mocks';
 
 const PAGE_SIZE = 8;
 

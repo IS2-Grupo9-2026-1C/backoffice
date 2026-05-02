@@ -1,6 +1,6 @@
 import { ChangeEvent, useMemo, useState } from 'react';
 import Button from '@/components/Button';
-import { Item, ItemStatus, User, items as initialItems, users } from '@/mocks';
+import { Item, ItemStatus, Seller, items as initialItems, sellers } from '@/mocks';
 
 const PAGE_SIZE = 8;
 
@@ -47,8 +47,8 @@ export default function Items() {
   const [page, setPage] = useState(1);
 
   const sellersById = useMemo(() => {
-    const m = new Map<string, User>();
-    users.forEach((u) => m.set(u.id, u));
+    const m = new Map<string, Seller>();
+    sellers.forEach((seller) => m.set(seller.id, seller));
     return m;
   }, []);
 

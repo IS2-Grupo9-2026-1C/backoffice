@@ -1,6 +1,8 @@
-import { ChangeEvent, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import Button from '@/components/Button';
-import { CURRENT_ADMIN_ID, User, UserStatus, users as initialUsers } from '@/mocks';
+import { blockUser, listUsers, unblockUser, UserListItem } from '@/services/users';
+
+type UserStatus = 'active' | 'blocked';
 
 const PAGE_SIZE = 8;
 
@@ -23,34 +25,85 @@ function formatDate(iso: string): string {
 }
 
 export default function Users() {
-  const [list, setList] = useState<User[]>(initialUsers);
+  const [list, setList] = useState<UserListItem[]>([]);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
-    );
-  }, [list, query]);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const timer = setTimeout(() => {
+      listUsers({
+        page,
+        size: PAGE_SIZE,
+        search: query.trim() || undefined,
+      })
+        .then((response) => {
+          if (cancelled) return;
+          setList(response.data);
+          setTotal(response.meta.total);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setError(err instanceof Error ? err.message : 'Error al cargar usuarios');
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [page, query]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (page > totalPages) setPage(totalPages);
+  }, [page, total]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const slice = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function handleSearch(e: ChangeEvent<HTMLInputElement>) {
     setQuery(e.target.value);
     setPage(1);
   }
 
-  function toggleStatus(user: User) {
-    if (user.id === CURRENT_ADMIN_ID) return;
-    setList((prev) =>
-      prev.map((u) =>
-        u.id === user.id ? { ...u, status: u.status === 'active' ? 'blocked' : 'active' } : u,
-      ),
-    );
+  function setPending(userId: number, pending: boolean) {
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      if (pending) {
+        next.add(userId);
+      } else {
+        next.delete(userId);
+      }
+      return next;
+    });
+  }
+
+  async function toggleStatus(user: UserListItem) {
+    setError(null);
+    setPending(user.id, true);
+    try {
+      if (user.isActive) {
+        await blockUser(user.id);
+      } else {
+        await unblockUser(user.id);
+      }
+      setList((prev) => prev.map((u) => (u.id === user.id ? { ...u, isActive: !u.isActive } : u)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar el usuario');
+    } finally {
+      setPending(user.id, false);
+    }
   }
 
   return (
@@ -68,9 +121,12 @@ export default function Users() {
           onChange={handleSearch}
         />
         <span className="text-sm text-gray-500">
-          {filtered.length} resultado{filtered.length === 1 ? '' : 's'}
+          {total} resultado{total === 1 ? '' : 's'}
         </span>
+        {loading && <span className="text-sm text-gray-400">Cargando...</span>}
       </section>
+
+      {error && <p className="m-0 text-sm text-red-600">{error}</p>}
 
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <table className="w-full border-collapse text-sm">
@@ -78,53 +134,49 @@ export default function Users() {
             <tr>
               <th className={thClass}>Nombre</th>
               <th className={thClass}>Email</th>
-              <th className={thClass}>Rol</th>
               <th className={thClass}>Fecha de registro</th>
               <th className={thClass}>Estado</th>
               <th className={`${thClass} text-right`}>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {slice.map((user) => {
-              const badge = STATUS_BADGE[user.status];
-              const isSelf = user.id === CURRENT_ADMIN_ID;
+            {list.map((user) => {
+              const status: UserStatus = user.isActive ? 'active' : 'blocked';
+              const badge = STATUS_BADGE[status];
+              const isPending = pendingIds.has(user.id);
+              const fullName = `${user.firstName} ${user.lastName}`.trim();
               return (
                 <tr key={user.id} className="border-b border-gray-200">
-                  <td className={tdClass}>{user.name}</td>
+                  <td className={tdClass}>{fullName}</td>
                   <td className={`${tdClass} text-gray-500`}>{user.email}</td>
-                  <td className={tdClass}>
-                    <span
-                      className={
-                        user.role === 'admin'
-                          ? 'inline-block rounded-md bg-[#EEF2FF] px-2 py-[2px] text-xs font-semibold capitalize text-indigo-600'
-                          : 'inline-block rounded-md px-2 py-[2px] text-xs font-medium capitalize text-gray-500'
-                      }
-                    >
-                      {user.role === 'admin' ? 'admin' : 'usuario'}
-                    </span>
-                  </td>
-                  <td className={`${tdClass} text-gray-500`}>{formatDate(user.registeredAt)}</td>
+                  <td className={`${tdClass} text-gray-500`}>{formatDate(user.createdAt)}</td>
                   <td className={tdClass}>
                     <span className={`${badgeClass} ${badge.className}`}>{badge.label}</span>
                   </td>
                   <td className={`${tdClass} text-right`}>
                     <Button
                       size="sm"
-                      variant={user.status === 'active' ? 'outlineDanger' : 'outlinePrimary'}
-                      disabled={isSelf}
-                      title={isSelf ? 'No podés bloquear tu propia cuenta' : ''}
+                      variant={user.isActive ? 'outlineDanger' : 'outlinePrimary'}
+                      disabled={isPending}
                       onClick={() => toggleStatus(user)}
                     >
-                      {user.status === 'active' ? 'Bloquear' : 'Desbloquear'}
+                      {user.isActive ? 'Bloquear' : 'Desbloquear'}
                     </Button>
                   </td>
                 </tr>
               );
             })}
-            {slice.length === 0 && (
+            {!loading && list.length === 0 && (
               <tr>
-                <td className="p-8 text-center text-sm text-gray-500" colSpan={6}>
+                <td className="p-8 text-center text-sm text-gray-500" colSpan={5}>
                   No hay usuarios que coincidan con la búsqueda.
+                </td>
+              </tr>
+            )}
+            {loading && list.length === 0 && (
+              <tr>
+                <td className="p-8 text-center text-sm text-gray-500" colSpan={5}>
+                  Cargando usuarios...
                 </td>
               </tr>
             )}

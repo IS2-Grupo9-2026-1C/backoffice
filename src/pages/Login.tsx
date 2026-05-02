@@ -1,15 +1,27 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '@/components/Button';
+import { login } from '@/services/auth';
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    navigate('/users');
+    setError(null);
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate('/users');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
   }
 
   const inputClass =
@@ -27,6 +39,7 @@ export default function Login() {
         </div>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          {error && <p className="m-0 text-sm text-red-600">{error}</p>}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-900" htmlFor="email">
               Email
@@ -57,8 +70,8 @@ export default function Login() {
             />
           </div>
 
-          <Button type="submit" variant="primary" fullWidth className="mt-2">
-            Ingresar
+          <Button type="submit" variant="primary" fullWidth className="mt-2" disabled={loading}>
+            {loading ? 'Ingresando...' : 'Ingresar'}
           </Button>
         </form>
       </div>

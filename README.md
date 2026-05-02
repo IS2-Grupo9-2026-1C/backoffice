@@ -34,7 +34,7 @@ Por defecto, Vite levanta en [http://localhost:5173](http://localhost:5173).
 
 ## Login
 
-El login es mock: cualquier email + password redirige a `/usuarios`. No hay backend conectado todavía; los datos vienen de [`src/mocks.ts`](src/mocks.ts).
+El login usa el gateway (`/auth/admin/token`) y guarda access/refresh tokens en `localStorage`. El listado de usuarios se consume desde `GET /users` via gateway.
 
 ## Linter y formato
 
@@ -50,6 +50,6 @@ git commit --no-verify -m "..."
 
 ## Notas
 
-- Los datos son mockeados en memoria: los cambios de estado (bloquear usuarios, deshabilitar items) se pierden al refrescar.
+- Usuarios se obtienen del gateway; items siguen mockeados en memoria y sus cambios se pierden al refrescar.
 - La paleta y el logo replican los de la app React Native para mantener consistencia de marca.
-- El admin actual (`ADMIN_ACTUAL_ID` en `mocks.ts`) no puede bloquearse a sí mismo desde la tabla de Usuarios.
+- El bloqueo/desbloqueo de usuarios se hace via API (admins no son usuarios del marketplace).

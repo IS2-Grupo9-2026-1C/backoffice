@@ -1,4 +1,5 @@
 import { ApiError, request } from './api';
+import { decodeJwt } from './jwt';
 import {
   getRefreshToken,
   getToken,
@@ -30,6 +31,10 @@ export async function login(email: string, password: string): Promise<TokenRespo
     body: { username: email, password },
     contentType: 'form',
   });
+  const claims = decodeJwt(data.access_token);
+  if (claims?.role !== 'admin') {
+    throw new ApiError(403, 'Acceso denegado: se requiere rol admin');
+  }
   await saveTokens(data);
   return data;
 }

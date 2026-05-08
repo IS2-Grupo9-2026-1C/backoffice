@@ -1,13 +1,6 @@
-export type UserStatus = 'active' | 'blocked';
-export type UserRole = 'admin' | 'user';
-
-export type User = {
+export type Seller = {
   id: string;
   name: string;
-  email: string;
-  registeredAt: string;
-  status: UserStatus;
-  role: UserRole;
 };
 
 export type ItemStatus = 'active' | 'out_of_stock' | 'disabled_by_seller' | 'disabled_by_admin';
@@ -21,105 +14,19 @@ export type Item = {
   status: ItemStatus;
 };
 
-export const CURRENT_ADMIN_ID = 'u-001';
-
-export const users: User[] = [
-  {
-    id: 'u-001',
-    name: 'Ignacio Rodríguez',
-    email: 'ignacio@bazaar.com',
-    registeredAt: '2025-01-12',
-    status: 'active',
-    role: 'admin',
-  },
-  {
-    id: 'u-002',
-    name: 'Camila Fernández',
-    email: 'camila.fernandez@gmail.com',
-    registeredAt: '2025-02-03',
-    status: 'active',
-    role: 'user',
-  },
-  {
-    id: 'u-003',
-    name: 'Martín López',
-    email: 'martin.lopez@hotmail.com',
-    registeredAt: '2025-02-18',
-    status: 'active',
-    role: 'user',
-  },
-  {
-    id: 'u-004',
-    name: 'Lucía Méndez',
-    email: 'lucia.mendez@gmail.com',
-    registeredAt: '2025-03-05',
-    status: 'blocked',
-    role: 'user',
-  },
-  {
-    id: 'u-005',
-    name: 'Federico Álvarez',
-    email: 'fede.alvarez@yahoo.com',
-    registeredAt: '2025-03-22',
-    status: 'active',
-    role: 'user',
-  },
-  {
-    id: 'u-006',
-    name: 'Sofía Iglesias',
-    email: 'sofi.iglesias@gmail.com',
-    registeredAt: '2025-04-09',
-    status: 'active',
-    role: 'user',
-  },
-  {
-    id: 'u-007',
-    name: 'Diego Pereyra',
-    email: 'diego.pereyra@outlook.com',
-    registeredAt: '2025-05-14',
-    status: 'blocked',
-    role: 'user',
-  },
-  {
-    id: 'u-008',
-    name: 'Valentina Soria',
-    email: 'valentina.soria@gmail.com',
-    registeredAt: '2025-06-01',
-    status: 'active',
-    role: 'user',
-  },
-  {
-    id: 'u-009',
-    name: 'Tomás Quiroga',
-    email: 'tomas.quiroga@gmail.com',
-    registeredAt: '2025-07-20',
-    status: 'active',
-    role: 'user',
-  },
-  {
-    id: 'u-010',
-    name: 'Agustina Romero',
-    email: 'agus.romero@gmail.com',
-    registeredAt: '2025-08-11',
-    status: 'active',
-    role: 'user',
-  },
-  {
-    id: 'u-011',
-    name: 'Joaquín Vidal',
-    email: 'jvidal@bazaar.com',
-    registeredAt: '2025-09-30',
-    status: 'active',
-    role: 'admin',
-  },
-  {
-    id: 'u-012',
-    name: 'Brenda Castro',
-    email: 'brenda.castro@gmail.com',
-    registeredAt: '2026-01-18',
-    status: 'active',
-    role: 'user',
-  },
+export const sellers: Seller[] = [
+  { id: 'u-001', name: 'Ignacio Rodríguez' },
+  { id: 'u-002', name: 'Camila Fernández' },
+  { id: 'u-003', name: 'Martín López' },
+  { id: 'u-004', name: 'Lucía Méndez' },
+  { id: 'u-005', name: 'Federico Álvarez' },
+  { id: 'u-006', name: 'Sofía Iglesias' },
+  { id: 'u-007', name: 'Diego Pereyra' },
+  { id: 'u-008', name: 'Valentina Soria' },
+  { id: 'u-009', name: 'Tomás Quiroga' },
+  { id: 'u-010', name: 'Agustina Romero' },
+  { id: 'u-011', name: 'Joaquín Vidal' },
+  { id: 'u-012', name: 'Brenda Castro' },
 ];
 
 export const items: Item[] = [

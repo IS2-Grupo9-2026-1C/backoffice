@@ -1,7 +1,7 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import Button from '@/components/Button';
 import { CATEGORIES } from '@/constants/categories';
-import { ItemListItem, listItems } from '@/services/items';
+import { ItemListItem, disableItemAsAdmin, enableItemAsAdmin, listItems } from '@/services/items';
 import { AdminUserLookupItem, lookupUsers } from '@/services/users';
 
 const PAGE_SIZE = 8;
@@ -167,6 +167,23 @@ export default function Items() {
     setCategoryOpen(false);
   }
 
+  async function handleToggleAdminDisabled(item: ItemListItem) {
+    setList((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, adminDisabled: !item.adminDisabled } : i)),
+    );
+    try {
+      if (item.adminDisabled) {
+        await enableItemAsAdmin(item.id);
+      } else {
+        await disableItemAsAdmin(item.id);
+      }
+    } catch {
+      setList((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, adminDisabled: item.adminDisabled } : i)),
+      );
+    }
+  }
+
   const selectedCategory = CATEGORIES.find((cat) => cat.id === categoryId);
   const selectedCategoryLabel = selectedCategory?.label ?? 'Todos';
 
@@ -180,7 +197,7 @@ export default function Items() {
       <section className="flex items-center gap-4">
         <input
           className="flex-1 max-w-[360px] rounded-[10px] border border-gray-200 bg-gray-50 px-4 py-[10px] text-sm text-gray-900 outline-none"
-          placeholder="Buscar por título o vendedor..."
+          placeholder="Buscar por título..."
           value={query}
           onChange={handleSearch}
         />
@@ -355,8 +372,7 @@ export default function Items() {
                       variant={item.adminDisabled ? 'outlinePrimary' : 'outlineDanger'}
                       fullWidth
                       className="px-3 truncate"
-                      disabled
-                      title="Próximamente"
+                      onClick={() => handleToggleAdminDisabled(item)}
                     >
                       {item.adminDisabled ? 'Rehabilitar' : 'Deshabilitar'}
                     </Button>

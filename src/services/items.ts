@@ -50,3 +50,11 @@ export async function listItems(
 
   return requestWithAuth<ItemListResponse>(`/admin/items?${queryParams.toString()}`);
 }
+
+export async function disableItemAsAdmin(id: string): Promise<void> {
+  await requestWithAuth(`/admin/items/${id}/disable`, { method: 'POST' });
+}
+
+export async function enableItemAsAdmin(id: string): Promise<void> {
+  await requestWithAuth(`/admin/items/${id}/enable`, { method: 'POST' });
+}

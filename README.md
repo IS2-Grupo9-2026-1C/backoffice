@@ -32,6 +32,36 @@ El paso `install` también configura [Husky](https://typicode.github.io/husky) (
 
 Por defecto, Vite levanta en [http://localhost:5173](http://localhost:5173).
 
+## Deploy en GitHub Pages
+
+El proyecto está preparado para publicarse como GitHub Pages del repositorio
+`IS2-Grupo9-2026-1C/backoffice`, por lo que la URL final queda bajo
+`https://is2-grupo9-2026-1c.github.io/backoffice/`.
+
+El workflow `.github/workflows/deploy-pages.yml` corre en cada push a `main` o `develop`:
+
+1. Instala dependencias con `npm ci`.
+2. Ejecuta `npm run build` con `VITE_ENV=production` y `VITE_BASE_PATH=/backoffice/`.
+3. Copia `dist/index.html` a `dist/404.html` para soportar refresh en rutas internas.
+4. Publica `dist/` usando GitHub Pages Actions.
+
+Para activarlo en GitHub:
+
+1. Entrar al repo `backoffice`.
+2. Ir a `Settings > Pages`.
+3. En `Build and deployment`, elegir `Source: GitHub Actions`.
+4. Hacer push a `develop` o correr manualmente `Deploy backoffice to GitHub Pages`.
+
+Si el backoffice queda publicado en otro repo o dominio, ajustar `VITE_BASE_PATH` en el workflow.
+Para validar el build local con la misma base de Pages:
+
+```bash
+VITE_ENV=production VITE_BASE_PATH=/backoffice/ npm run build
+```
+
+También hay que permitir el origen de GitHub Pages en el gateway desplegado. Para esta URL, el
+origin CORS es `https://is2-grupo9-2026-1c.github.io` (sin `/backoffice`).
+
 ## Login
 
 El login usa el gateway (`/auth/admin/token`) y guarda access/refresh tokens en `localStorage`. El listado de usuarios se consume desde `GET /users` via gateway.

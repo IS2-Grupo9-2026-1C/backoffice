@@ -35,10 +35,10 @@ export default function Users() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     setError(null);
 
     const timer = setTimeout(() => {
+      setLoading(true);
       listUsers({
         page,
         size: PAGE_SIZE,
@@ -66,8 +66,8 @@ export default function Users() {
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    if (page > totalPages) setPage(totalPages);
-  }, [page, total]);
+    if (page > totalPages) setPage(1);
+  }, [total]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -126,17 +126,24 @@ export default function Users() {
         {loading && <span className="text-sm text-gray-400">Cargando...</span>}
       </section>
 
-      {error && <p className="m-0 text-sm text-red-600">{error}</p>}
+      {error && list.length > 0 && <p className="m-0 text-sm text-red-600">{error}</p>}
 
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full table-fixed border-collapse text-sm">
+          <colgroup>
+            <col />
+            <col />
+            <col className="w-[140px]" />
+            <col className="w-[120px]" />
+            <col className="w-[140px]" />
+          </colgroup>
           <thead>
             <tr>
               <th className={thClass}>Nombre</th>
               <th className={thClass}>Email</th>
               <th className={thClass}>Fecha de registro</th>
               <th className={thClass}>Estado</th>
-              <th className={`${thClass} text-right`}>Acciones</th>
+              <th className={`${thClass} text-right`}></th>
             </tr>
           </thead>
           <tbody>
@@ -147,8 +154,12 @@ export default function Users() {
               const fullName = `${user.firstName} ${user.lastName}`.trim();
               return (
                 <tr key={user.id} className="border-b border-gray-200">
-                  <td className={tdClass}>{fullName}</td>
-                  <td className={`${tdClass} text-gray-500`}>{user.email}</td>
+                  <td className={tdClass}>
+                    <div className="max-w-[320px] truncate">{fullName}</div>
+                  </td>
+                  <td className={tdClass}>
+                    <div className="max-w-[320px] truncate text-gray-500">{user.email}</div>
+                  </td>
                   <td className={`${tdClass} text-gray-500`}>{formatDate(user.createdAt)}</td>
                   <td className={tdClass}>
                     <span className={`${badgeClass} ${badge.className}`}>{badge.label}</span>
@@ -166,7 +177,14 @@ export default function Users() {
                 </tr>
               );
             })}
-            {!loading && list.length === 0 && (
+            {!loading && error && list.length === 0 && (
+              <tr>
+                <td className="p-8 text-center text-sm text-red-600" colSpan={5}>
+                  {error}
+                </td>
+              </tr>
+            )}
+            {!loading && !error && list.length === 0 && (
               <tr>
                 <td className="p-8 text-center text-sm text-gray-500" colSpan={5}>
                   No hay usuarios que coincidan con la búsqueda.

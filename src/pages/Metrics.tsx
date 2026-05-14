@@ -17,6 +17,8 @@ export default function Metrics() {
   const [period, setPeriod] = useState<number | null>(null);
   const [periodOpen, setPeriodOpen] = useState(false);
   const periodRef = useRef<HTMLDivElement | null>(null);
+  const [metricOpen, setMetricOpen] = useState(false);
+  const metricRef = useRef<HTMLDivElement | null>(null);
   const [data, setData] = useState<RegisteredUsersMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,9 @@ export default function Metrics() {
 
   useEffect(() => {
     function handleClick(event: MouseEvent) {
+      if (metricRef.current && !metricRef.current.contains(event.target as Node)) {
+        setMetricOpen(false);
+      }
       if (periodRef.current && !periodRef.current.contains(event.target as Node)) {
         setPeriodOpen(false);
       }
@@ -54,11 +59,12 @@ export default function Metrics() {
 
     function handleKey(event: KeyboardEvent) {
       if (event.key === 'Escape') {
+        setMetricOpen(false);
         setPeriodOpen(false);
       }
     }
 
-    if (periodOpen) {
+    if (metricOpen || periodOpen) {
       document.addEventListener('mousedown', handleClick);
       document.addEventListener('keydown', handleKey);
     }
@@ -67,7 +73,7 @@ export default function Metrics() {
       document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('keydown', handleKey);
     };
-  }, [periodOpen]);
+  }, [metricOpen, periodOpen]);
 
   function handlePeriodSelect(value: string) {
     setPeriod(value ? Number(value) : null);
@@ -116,6 +122,49 @@ export default function Metrics() {
       </header>
 
       <section className="flex items-center gap-4">
+        <div className="relative" ref={metricRef}>
+          <button
+            type="button"
+            onClick={() => setMetricOpen((open) => !open)}
+            className="flex min-w-[200px] items-center justify-between gap-3 rounded-[10px] border border-gray-200 bg-gray-50 px-4 py-[10px] text-sm text-gray-900 outline-none hover:bg-gray-100"
+            aria-haspopup="listbox"
+            aria-expanded={metricOpen}
+          >
+            <span className="truncate">Usuarios registrados</span>
+            <svg
+              className="h-4 w-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          {metricOpen && (
+            <div className="absolute left-0 z-10 mt-2 w-full overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm">
+              <div className="py-1" role="listbox">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMetricOpen(false);
+                  }}
+                  className="w-full px-4 py-[10px] text-left text-sm bg-gray-100 font-semibold text-indigo-600 transition-colors"
+                  role="option"
+                  aria-selected={true}
+                >
+                  Usuarios registrados
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="relative" ref={periodRef}>
           <button
             type="button"
@@ -249,7 +298,12 @@ export default function Metrics() {
                         margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                        <XAxis
+                          dataKey="date"
+                          stroke="#9ca3af"
+                          style={{ fontSize: '12px' }}
+                          {...(period === 90 ? { interval: 4 } : {})}
+                        />
                         <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
                         <Tooltip
                           contentStyle={{
@@ -267,7 +321,12 @@ export default function Metrics() {
                         margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="date" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                        <XAxis
+                          dataKey="date"
+                          stroke="#9ca3af"
+                          style={{ fontSize: '12px' }}
+                          {...(period === 90 ? { interval: 4 } : {})}
+                        />
                         <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
                         <Tooltip
                           contentStyle={{
@@ -301,7 +360,7 @@ export default function Metrics() {
                   <thead>
                     <tr className="border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-[0.4px] text-gray-500">
                       <th className="px-4 py-[10px]">Fecha</th>
-                      <th className="px-4 py-[10px]">Cantidad</th>
+                      <th className="px-4 py-[10px]">Cantidad de usuarios registrados</th>
                     </tr>
                   </thead>
                   <tbody>

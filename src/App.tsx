@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Login from '@/pages/Login';
 import Users from '@/pages/Users';
 import Items from '@/pages/Items';
+import Metrics from '@/pages/Metrics';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -12,6 +13,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/users" element={<Users />} />
+          <Route path="/metrics" element={<Metrics />} />
           <Route path="/items" element={<Items />} />
         </Route>
       </Route>

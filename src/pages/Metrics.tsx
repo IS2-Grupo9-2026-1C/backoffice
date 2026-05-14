@@ -360,14 +360,16 @@ export default function Metrics() {
                   <thead>
                     <tr className="border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-[0.4px] text-gray-500">
                       <th className="px-4 py-[10px]">Fecha</th>
-                      <th className="px-4 py-[10px]">Cantidad de usuarios registrados</th>
+                      <th className="px-4 py-[10px] text-right">
+                        Cantidad de usuarios registrados
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.series.map((s) => (
                       <tr key={s.date} className="border-b border-gray-100">
                         <td className="p-4 text-gray-700">{s.date}</td>
-                        <td className="p-4 text-gray-900">{s.count}</td>
+                        <td className="p-4 text-right text-gray-900">{s.count}</td>
                       </tr>
                     ))}
                   </tbody>

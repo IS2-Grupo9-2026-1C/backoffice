@@ -205,6 +205,17 @@ export default function Items() {
           {total} resultado{total === 1 ? '' : 's'}
         </span>
         {loading && <span className="text-sm text-gray-400">Cargando...</span>}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setPage(1);
+            setQuery('');
+            setCategoryId('');
+          }}
+        >
+          Actualizar
+        </Button>
         <div className="ml-auto flex items-center gap-3 text-xs text-gray-500">
           <span className="inline-flex items-center gap-2">
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700">

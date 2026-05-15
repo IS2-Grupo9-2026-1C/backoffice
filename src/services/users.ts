@@ -46,3 +46,22 @@ export async function blockUser(userId: number): Promise<void> {
 export async function unblockUser(userId: number): Promise<void> {
   await requestWithAuth(`/users/${userId}/unblock`, { method: 'POST' });
 }
+
+export interface AdminUserLookupItem {
+  id: number;
+  name: string | null;
+  email: string | null;
+}
+
+interface AdminUserLookupResponse {
+  data: AdminUserLookupItem[];
+}
+
+export async function lookupUsers(ids: string[]): Promise<Map<string, AdminUserLookupItem>> {
+  if (ids.length === 0) return new Map();
+  const unique = Array.from(new Set(ids));
+  const response = await requestWithAuth<AdminUserLookupResponse>(
+    `/users/lookup?ids=${unique.join(',')}`,
+  );
+  return new Map(response.data.map((u) => [String(u.id), u]));
+}

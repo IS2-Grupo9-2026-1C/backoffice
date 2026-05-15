@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import Button from '@/components/Button';
+import { logout } from '@/services/auth';
 
 const navItems = [
   { to: '/users', label: 'Usuarios' },
@@ -13,8 +14,13 @@ const navItemActive = 'bg-gray-100 text-indigo-600 font-semibold';
 export default function Sidebar() {
   const navigate = useNavigate();
 
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
+
   return (
-    <aside className="flex w-60 flex-col gap-6 border-r border-gray-200 bg-white p-6">
+    <aside className="flex w-48 flex-col gap-5 border-r border-gray-200 bg-white p-4">
       <div className="flex items-center gap-2 border-b border-gray-200 pb-4">
         <img src="/bazaar.svg" alt="Bazaar" className="block h-[22px] w-auto" />
         <span className="text-lg font-bold text-[#453de0]">Admin</span>
@@ -36,7 +42,7 @@ export default function Sidebar() {
         size="sm"
         variant="outline"
         className="font-semibold text-gray-500"
-        onClick={() => navigate('/login')}
+        onClick={handleLogout}
       >
         Cerrar sesión
       </Button>

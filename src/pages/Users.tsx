@@ -124,6 +124,16 @@ export default function Users() {
           {total} resultado{total === 1 ? '' : 's'}
         </span>
         {loading && <span className="text-sm text-gray-400">Cargando...</span>}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setPage(1);
+            setQuery('');
+          }}
+        >
+          Actualizar
+        </Button>
       </section>
 
       {error && list.length > 0 && <p className="m-0 text-sm text-red-600">{error}</p>}

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Button from '@/components/Button';
 import { getRegisteredUsersMetrics, RegisteredUsersMetrics } from '@/services/metrics';
 import {
@@ -11,7 +11,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  type TooltipValueType,
 } from 'recharts';
+
+const formatRegisteredTooltip =
+  (label: string) =>
+  (value: TooltipValueType | undefined): [ReactNode, string] => [value ?? '', label];
 
 export default function Metrics() {
   const [period, setPeriod] = useState<number | null>(null);
@@ -311,7 +316,7 @@ export default function Metrics() {
                             border: '1px solid #e5e7eb',
                             borderRadius: '8px',
                           }}
-                          formatter={(value: unknown) => [value, 'Registrados']}
+                          formatter={formatRegisteredTooltip('Registrados')}
                         />
                         <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
                       </BarChart>
@@ -334,7 +339,7 @@ export default function Metrics() {
                             border: '1px solid #e5e7eb',
                             borderRadius: '8px',
                           }}
-                          formatter={(value: unknown) => [value, 'Registrados acumulados']}
+                          formatter={formatRegisteredTooltip('Registrados acumulados')}
                         />
                         <Line
                           type="monotone"

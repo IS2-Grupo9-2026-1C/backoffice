@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import Button from '@/components/Button';
+import ItemDetailModal from '@/components/ItemDetailModal';
 import { CATEGORIES } from '@/constants/categories';
 import { ItemListItem, disableItemAsAdmin, enableItemAsAdmin, listItems } from '@/services/items';
 import { AdminUserLookupItem, lookupUsers } from '@/services/users';
@@ -74,10 +75,12 @@ export default function Items() {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(1);
+  const [refreshTick, setRefreshTick] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sellersById, setSellersById] = useState<Map<string, AdminUserLookupItem>>(new Map());
+  const [detailItemId, setDetailItemId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,7 +124,7 @@ export default function Items() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [page, query, categoryId]);
+  }, [page, query, categoryId, refreshTick]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -205,15 +208,7 @@ export default function Items() {
           {total} resultado{total === 1 ? '' : 's'}
         </span>
         {loading && <span className="text-sm text-gray-400">Cargando...</span>}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setPage(1);
-            setQuery('');
-            setCategoryId('');
-          }}
-        >
+        <Button size="sm" variant="outline" onClick={() => setRefreshTick((tick) => tick + 1)}>
           Actualizar
         </Button>
         <div className="ml-auto flex items-center gap-3 text-xs text-gray-500">
@@ -339,7 +334,13 @@ export default function Items() {
                 <tr key={item.id} className="border-b border-gray-200">
                   <td className={tdClass}>
                     <div className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-gray-900">{item.title}</span>
+                      <button
+                        type="button"
+                        onClick={() => setDetailItemId(item.id)}
+                        className="truncate text-left text-gray-900 transition-colors hover:text-indigo-600"
+                      >
+                        {item.title}
+                      </button>
                       <span className="truncate text-xs text-gray-400">
                         Vendedor: {sellerDisplay.name}
                       </span>
@@ -439,6 +440,10 @@ export default function Items() {
           Siguiente →
         </Button>
       </section>
+
+      {detailItemId && (
+        <ItemDetailModal itemId={detailItemId} onClose={() => setDetailItemId(null)} />
+      )}
     </div>
   );
 }

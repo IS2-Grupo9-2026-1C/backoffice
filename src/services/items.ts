@@ -58,3 +58,32 @@ export async function disableItemAsAdmin(id: string): Promise<void> {
 export async function enableItemAsAdmin(id: string): Promise<void> {
   await requestWithAuth(`/admin/items/${id}/enable`, { method: 'POST' });
 }
+
+export interface ItemStatusEvent {
+  eventType: string;
+  fromValue?: string | null;
+  toValue?: string | null;
+  actorId?: string | null;
+  actorRole: string;
+  changedAt: string;
+}
+
+export interface AdminItemDetail {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  stock: number;
+  status: ItemRawStatus;
+  sellerBlocked: boolean;
+  adminDisabled: boolean;
+  categoryId: string;
+  sellerId: string;
+  imageUrls: string[];
+  createdAt: string;
+  history: ItemStatusEvent[];
+}
+
+export async function getItemAdminDetail(id: string): Promise<AdminItemDetail> {
+  return requestWithAuth<AdminItemDetail>(`/admin/items/${id}`);
+}

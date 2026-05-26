@@ -126,7 +126,7 @@ export default function Items() {
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     if (page > totalPages) setPage(1);
-  }, [total]);
+  }, [page, total]);
 
   useEffect(() => {
     function handleClick(event: MouseEvent) {

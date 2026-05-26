@@ -311,7 +311,7 @@ export default function Metrics() {
                             border: '1px solid #e5e7eb',
                             borderRadius: '8px',
                           }}
-                          formatter={(value: unknown) => [value, 'Registrados']}
+                          formatter={(value) => [String(value), 'Registrados']}
                         />
                         <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
                       </BarChart>
@@ -334,7 +334,7 @@ export default function Metrics() {
                             border: '1px solid #e5e7eb',
                             borderRadius: '8px',
                           }}
-                          formatter={(value: unknown) => [value, 'Registrados acumulados']}
+                          formatter={(value) => [String(value), 'Registrados acumulados']}
                         />
                         <Line
                           type="monotone"

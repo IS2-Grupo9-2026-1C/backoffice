@@ -1,11 +1,17 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import Button from '@/components/Button';
-import { getRegisteredUsersMetrics, RegisteredUsersMetrics } from '@/services/metrics';
+import {
+  getRegisteredUsersMetrics,
+  RegisteredUsersMetrics,
+  getOrdersMetrics,
+  OrdersMetrics,
+} from '@/services/metrics';
 import {
   BarChart,
   Bar,
   LineChart,
   Line,
+  Legend,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,30 +19,72 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
+type MetricType = 'users_registered' | 'orders_total';
+
+type OrdersTimelineRow = {
+  date: string;
+  [status: string]: string | number;
+};
+
+const STATUS_COLORS = [
+  '#4f46e5',
+  '#0ea5e9',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#14b8a6',
+  '#ec4899',
+  '#84cc16',
+];
+
+function formatStatusLabel(status: string): string {
+  if (!status) return '';
+  const withSpaces = status.split('_').join(' ');
+  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
+}
+
 export default function Metrics() {
+  const [metric, setMetric] = useState<MetricType>('users_registered');
   const [period, setPeriod] = useState<number | null>(null);
   const [periodOpen, setPeriodOpen] = useState(false);
   const periodRef = useRef<HTMLDivElement | null>(null);
   const [metricOpen, setMetricOpen] = useState(false);
   const metricRef = useRef<HTMLDivElement | null>(null);
-  const [data, setData] = useState<RegisteredUsersMetrics | null>(null);
+  const [usersData, setUsersData] = useState<RegisteredUsersMetrics | null>(null);
+  const [ordersData, setOrdersData] = useState<OrdersMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
+
+  const metricLabel = metric === 'users_registered' ? 'Usuarios registrados' : 'Ordenes totales';
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
     setLoading(true);
-    getRegisteredUsersMetrics(period)
+    const request =
+      metric === 'users_registered' ? getRegisteredUsersMetrics(period) : getOrdersMetrics(period);
+
+    request
       .then((res) => {
         if (cancelled) return;
-        setData(res);
+        if (metric === 'users_registered') {
+          setUsersData(res as RegisteredUsersMetrics);
+          setOrdersData(null);
+        } else {
+          setOrdersData(res as OrdersMetrics);
+          setUsersData(null);
+        }
       })
       .catch((err) => {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Error al cargar métricas');
-        setData(null);
+        if (metric === 'users_registered') {
+          setUsersData(null);
+        } else {
+          setOrdersData(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -45,7 +93,7 @@ export default function Metrics() {
     return () => {
       cancelled = true;
     };
-  }, [period]);
+  }, [metric, period]);
 
   useEffect(() => {
     function handleClick(event: MouseEvent) {
@@ -82,9 +130,17 @@ export default function Metrics() {
 
   function handleRefresh() {
     setLoading(true);
-    getRegisteredUsersMetrics(period)
+    const request =
+      metric === 'users_registered' ? getRegisteredUsersMetrics(period) : getOrdersMetrics(period);
+    request
       .then((res) => {
-        setData(res);
+        if (metric === 'users_registered') {
+          setUsersData(res as RegisteredUsersMetrics);
+          setOrdersData(null);
+        } else {
+          setOrdersData(res as OrdersMetrics);
+          setUsersData(null);
+        }
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Error al cargar métricas');
@@ -95,15 +151,54 @@ export default function Metrics() {
   }
 
   const cumulativeSeries = useMemo(() => {
-    if (!data) return [] as { date: string; count: number }[];
+    if (!usersData) return [] as { date: string; count: number }[];
     const out: { date: string; count: number }[] = [];
     let acc = 0;
-    for (const item of data.series) {
+    for (const item of usersData.series) {
       acc += item.count;
       out.push({ date: item.date, count: acc });
     }
     return out;
-  }, [data]);
+  }, [usersData]);
+
+  const ordersStatuses = useMemo(() => {
+    if (!ordersData) return [] as string[];
+    const fromDistribution = ordersData.current_distribution.map((item) => item.status);
+    const missingFromSeries = ordersData.series
+      .map((item) => item.status)
+      .filter((status) => !fromDistribution.includes(status));
+    return [...fromDistribution, ...missingFromSeries];
+  }, [ordersData]);
+
+  const ordersStatusColors = useMemo(() => {
+    const map: Record<string, string> = {};
+    ordersStatuses.forEach((status, index) => {
+      map[status] = STATUS_COLORS[index % STATUS_COLORS.length];
+    });
+    return map;
+  }, [ordersStatuses]);
+
+  const ordersTimeline = useMemo(() => {
+    if (!ordersData) return [] as OrdersTimelineRow[];
+
+    const rowsByDate = new Map<string, OrdersTimelineRow>();
+    for (const item of ordersData.series) {
+      const current = rowsByDate.get(item.date) ?? { date: item.date };
+      current[item.status] = item.count;
+      rowsByDate.set(item.date, current);
+    }
+
+    const rows = Array.from(rowsByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+    rows.forEach((row) => {
+      ordersStatuses.forEach((status) => {
+        if (row[status] === undefined) {
+          row[status] = 0;
+        }
+      });
+    });
+
+    return rows;
+  }, [ordersData, ordersStatuses]);
 
   const periodLabel =
     period === 7
@@ -130,7 +225,7 @@ export default function Metrics() {
             aria-haspopup="listbox"
             aria-expanded={metricOpen}
           >
-            <span className="truncate">Usuarios registrados</span>
+            <span className="truncate">{metricLabel}</span>
             <svg
               className="h-4 w-4 text-gray-400"
               fill="none"
@@ -152,13 +247,34 @@ export default function Metrics() {
                 <button
                   type="button"
                   onClick={() => {
+                    setMetric('users_registered');
                     setMetricOpen(false);
                   }}
-                  className="w-full px-4 py-[10px] text-left text-sm bg-gray-100 font-semibold text-indigo-600 transition-colors"
+                  className={`w-full px-4 py-[10px] text-left text-sm transition-colors ${
+                    metric === 'users_registered'
+                      ? 'bg-gray-100 font-semibold text-indigo-600'
+                      : 'text-gray-900 hover:bg-gray-50'
+                  }`}
                   role="option"
-                  aria-selected={true}
+                  aria-selected={metric === 'users_registered'}
                 >
                   Usuarios registrados
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMetric('orders_total');
+                    setMetricOpen(false);
+                  }}
+                  className={`w-full px-4 py-[10px] text-left text-sm transition-colors ${
+                    metric === 'orders_total'
+                      ? 'bg-gray-100 font-semibold text-indigo-600'
+                      : 'text-gray-900 hover:bg-gray-50'
+                  }`}
+                  role="option"
+                  aria-selected={metric === 'orders_total'}
+                >
+                  Ordenes totales
                 </button>
               </div>
             </div>
@@ -256,7 +372,7 @@ export default function Metrics() {
 
       {error && <p className="m-0 text-sm text-red-600">{error}</p>}
 
-      {data && (
+      {metric === 'users_registered' && usersData && (
         <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6">
           {period !== null && (
             <div className="absolute right-4 top-4 flex items-center gap-2">
@@ -278,23 +394,24 @@ export default function Metrics() {
               </Button>
             </div>
           )}
-          {data.series.length > 0 ? (
+          {usersData.series.length > 0 ? (
             period !== null ? (
               <>
                 <div className="mb-6 flex items-end justify-between">
                   <div>
                     <div className="text-sm text-gray-500">Total registrados</div>
-                    <div className="text-4xl font-bold text-gray-900">{data.total}</div>
+                    <div className="text-4xl font-bold text-gray-900">{usersData.total}</div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    Período: {data.period_days ? `${data.period_days} días` : 'sin filtro'}
+                    Período:{' '}
+                    {usersData.period_days ? `${usersData.period_days} días` : 'sin filtro'}
                   </div>
                 </div>
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     {chartType === 'bar' ? (
                       <BarChart
-                        data={data.series}
+                        data={usersData.series}
                         margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -353,7 +470,7 @@ export default function Metrics() {
                 <div className="mb-4 flex items-end justify-between">
                   <div>
                     <div className="text-sm text-gray-500">Total registrados</div>
-                    <div className="text-4xl font-bold text-gray-900">{data.total}</div>
+                    <div className="text-4xl font-bold text-gray-900">{usersData.total}</div>
                   </div>
                 </div>
                 <table className="w-full text-sm">
@@ -366,7 +483,7 @@ export default function Metrics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.series.map((s) => (
+                    {usersData.series.map((s) => (
                       <tr key={s.date} className="border-b border-gray-100">
                         <td className="p-4 text-gray-700">{s.date}</td>
                         <td className="p-4 text-right text-gray-900">{s.count}</td>
@@ -379,6 +496,102 @@ export default function Metrics() {
           ) : (
             <div className="flex items-center justify-center py-12">
               <p className="text-sm text-gray-500">No hay datos para este período.</p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {metric === 'orders_total' && ordersData && (
+        <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6">
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Total de ordenes</div>
+              <div className="text-4xl font-bold text-gray-900">{ordersData.total}</div>
+            </div>
+            <div className="text-sm text-gray-500">
+              Período: {ordersData.period_days ? `${ordersData.period_days} días` : 'sin filtro'}
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="mb-3 text-base font-semibold text-gray-900">
+              Distribución actual por estado
+            </h2>
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={ordersData.current_distribution}
+                  margin={{ top: 20, right: 30, left: 0, bottom: 32 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="status"
+                    stroke="#9ca3af"
+                    tick={{ fontSize: 12 }}
+                    angle={-20}
+                    textAnchor="end"
+                    height={70}
+                    tickFormatter={(value) => formatStatusLabel(String(value))}
+                  />
+                  <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value) => [String(value), 'Ordenes']}
+                    labelFormatter={(value) => formatStatusLabel(String(value))}
+                  />
+                  <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {period !== null && (
+            <div>
+              <h2 className="mb-3 text-base font-semibold text-gray-900">
+                Órdenes creadas por día y estado
+              </h2>
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={ordersTimeline}
+                    margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#9ca3af"
+                      style={{ fontSize: '12px' }}
+                      {...(period === 90 ? { interval: 4 } : {})}
+                    />
+                    <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                      }}
+                      formatter={(value, name) => [String(value), formatStatusLabel(String(name))]}
+                    />
+                    <Legend
+                      iconType="circle"
+                      formatter={(value) => formatStatusLabel(String(value))}
+                    />
+                    {ordersStatuses.map((status) => (
+                      <Bar
+                        key={status}
+                        dataKey={status}
+                        stackId="orders-status"
+                        fill={ordersStatusColors[status]}
+                        radius={[2, 2, 0, 0]}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
         </section>

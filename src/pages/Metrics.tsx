@@ -397,7 +397,11 @@ export default function Metrics() {
                           style={{ fontSize: '12px' }}
                           {...(period === 90 ? { interval: 4 } : {})}
                         />
-                        <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} allowDecimals={false} />
+                        <YAxis
+                          stroke="#9ca3af"
+                          style={{ fontSize: '12px' }}
+                          allowDecimals={false}
+                        />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: '#ffffff',
@@ -426,7 +430,11 @@ export default function Metrics() {
                           style={{ fontSize: '12px' }}
                           {...(period === 90 ? { interval: 4 } : {})}
                         />
-                        <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} allowDecimals={false} />
+                        <YAxis
+                          stroke="#9ca3af"
+                          style={{ fontSize: '12px' }}
+                          allowDecimals={false}
+                        />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: '#ffffff',
@@ -501,10 +509,7 @@ export default function Metrics() {
           </div>
 
           <div className="mb-8">
-            <h2 className="mb-3 text-base font-semibold text-gray-900">
-              Distribución por estado
-              {ordersData.period_days != null ? ' (en el período)' : ''}
-            </h2>
+            <h2 className="mb-3 text-base font-semibold text-gray-900">Distribución por estado</h2>
             <div className="h-80 w-full min-h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -531,12 +536,7 @@ export default function Metrics() {
                     formatter={(value) => [String(value), 'Ordenes']}
                     labelFormatter={(value) => formatStatusLabel(String(value))}
                   />
-                  <Bar
-                    dataKey="count"
-                    name="Por estado"
-                    radius={[4, 4, 0, 0]}
-                    legendType="none"
-                  >
+                  <Bar dataKey="count" name="Por estado" radius={[4, 4, 0, 0]} legendType="none">
                     {ordersData.current_distribution.map((entry, index) => (
                       <Cell
                         key={`dist-${entry.status}-${index}`}

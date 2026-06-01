@@ -9,6 +9,7 @@ import {
 import {
   BarChart,
   Bar,
+  Cell,
   LineChart,
   Line,
   XAxis,
@@ -19,6 +20,28 @@ import {
 } from 'recharts';
 
 type MetricType = 'users_registered' | 'orders_total';
+
+const CHART_COLORS = [
+  '#4f46e5',
+  '#0ea5e9',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#14b8a6',
+  '#ec4899',
+  '#84cc16',
+];
+
+function normalizeSeriesPoint(item: { date: string; count: unknown }): {
+  date: string;
+  count: number;
+} {
+  return {
+    date: String(item.date ?? ''),
+    count: Number(item.count ?? 0),
+  };
+}
 
 function formatStatusLabel(status: string): string {
   if (!status) return '';
@@ -132,16 +155,26 @@ export default function Metrics() {
       });
   }
 
+  const usersSeriesNormalized = useMemo(
+    () => (usersData ? usersData.series.map(normalizeSeriesPoint) : []),
+    [usersData],
+  );
+
   const cumulativeSeries = useMemo(() => {
     if (!usersData) return [] as { date: string; count: number }[];
     const out: { date: string; count: number }[] = [];
     let acc = 0;
-    for (const item of usersData.series) {
+    for (const item of usersSeriesNormalized) {
       acc += item.count;
       out.push({ date: item.date, count: acc });
     }
     return out;
-  }, [usersData]);
+  }, [usersData, usersSeriesNormalized]);
+
+  const ordersSeriesNormalized = useMemo(
+    () => (ordersData ? ordersData.series.map(normalizeSeriesPoint) : []),
+    [ordersData],
+  );
 
   const periodLabel =
     period === 7
@@ -337,7 +370,7 @@ export default function Metrics() {
               </Button>
             </div>
           )}
-          {usersData.series.length > 0 ? (
+          {usersSeriesNormalized.length > 0 ? (
             period !== null ? (
               <>
                 <div className="mb-6 flex items-end justify-between">
@@ -350,11 +383,11 @@ export default function Metrics() {
                     {usersData.period_days ? `${usersData.period_days} días` : 'sin filtro'}
                   </div>
                 </div>
-                <div className="h-80 w-full">
+                <div className="h-80 w-full min-h-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
                     {chartType === 'bar' ? (
                       <BarChart
-                        data={usersData.series}
+                        data={usersSeriesNormalized}
                         margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -364,7 +397,7 @@ export default function Metrics() {
                           style={{ fontSize: '12px' }}
                           {...(period === 90 ? { interval: 4 } : {})}
                         />
-                        <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                        <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} allowDecimals={false} />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: '#ffffff',
@@ -373,7 +406,13 @@ export default function Metrics() {
                           }}
                           formatter={(value) => [String(value), 'Registrados']}
                         />
-                        <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                        <Bar
+                          dataKey="count"
+                          name="Registrados"
+                          fill="#4f46e5"
+                          radius={[4, 4, 0, 0]}
+                          legendType="none"
+                        />
                       </BarChart>
                     ) : (
                       <LineChart
@@ -387,7 +426,7 @@ export default function Metrics() {
                           style={{ fontSize: '12px' }}
                           {...(period === 90 ? { interval: 4 } : {})}
                         />
-                        <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                        <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} allowDecimals={false} />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: '#ffffff',
@@ -399,9 +438,14 @@ export default function Metrics() {
                         <Line
                           type="monotone"
                           dataKey="count"
+                          name="Registrados acumulados"
                           stroke="#4f46e5"
                           strokeWidth={2}
-                          dot={false}
+                          dot={{ r: 3, fill: '#4f46e5' }}
+                          activeDot={{ r: 5 }}
+                          isAnimationActive={false}
+                          connectNulls
+                          legendType="none"
                         />
                       </LineChart>
                     )}
@@ -426,7 +470,7 @@ export default function Metrics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {usersData.series.map((s) => (
+                    {usersSeriesNormalized.map((s) => (
                       <tr key={s.date} className="border-b border-gray-100">
                         <td className="p-4 text-gray-700">{s.date}</td>
                         <td className="p-4 text-right text-gray-900">{s.count}</td>
@@ -461,7 +505,7 @@ export default function Metrics() {
               Distribución por estado
               {ordersData.period_days != null ? ' (en el período)' : ''}
             </h2>
-            <div className="h-80 w-full">
+            <div className="h-80 w-full min-h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={ordersData.current_distribution}
@@ -477,7 +521,7 @@ export default function Metrics() {
                     height={70}
                     tickFormatter={(value) => formatStatusLabel(String(value))}
                   />
-                  <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#ffffff',
@@ -487,7 +531,19 @@ export default function Metrics() {
                     formatter={(value) => [String(value), 'Ordenes']}
                     labelFormatter={(value) => formatStatusLabel(String(value))}
                   />
-                  <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="count"
+                    name="Por estado"
+                    radius={[4, 4, 0, 0]}
+                    legendType="none"
+                  >
+                    {ordersData.current_distribution.map((entry, index) => (
+                      <Cell
+                        key={`dist-${entry.status}-${index}`}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -498,10 +554,10 @@ export default function Metrics() {
               <h2 className="mb-3 text-base font-semibold text-gray-900">
                 Órdenes creadas por día
               </h2>
-              <div className="h-80 w-full">
+              <div className="h-80 w-full min-h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={ordersData.series}
+                    data={ordersSeriesNormalized}
                     margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -511,7 +567,7 @@ export default function Metrics() {
                       style={{ fontSize: '12px' }}
                       {...(period === 90 ? { interval: 4 } : {})}
                     />
-                    <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                    <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} allowDecimals={false} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: '#ffffff',
@@ -520,7 +576,13 @@ export default function Metrics() {
                       }}
                       formatter={(value) => [String(value), 'Órdenes creadas']}
                     />
-                    <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="count"
+                      name="Órdenes creadas"
+                      fill="#4f46e5"
+                      radius={[4, 4, 0, 0]}
+                      legendType="none"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

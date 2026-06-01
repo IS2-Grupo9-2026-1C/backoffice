@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import Button from '@/components/Button';
 import {
   getRegisteredUsersMetrics,
@@ -64,6 +64,19 @@ export default function Metrics() {
 
   const metricLabel = metric === 'users_registered' ? 'Usuarios registrados' : 'Ordenes totales';
 
+  const applyFetchedMetrics = useCallback(
+    (activeMetric: MetricType, data: RegisteredUsersMetrics | OrdersMetrics) => {
+      if (activeMetric === 'users_registered') {
+        setUsersData(data as RegisteredUsersMetrics);
+        setOrdersData(null);
+      } else {
+        setOrdersData(data as OrdersMetrics);
+        setUsersData(null);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     let cancelled = false;
     setError(null);
@@ -74,13 +87,7 @@ export default function Metrics() {
     request
       .then((res) => {
         if (cancelled) return;
-        if (metric === 'users_registered') {
-          setUsersData(res as RegisteredUsersMetrics);
-          setOrdersData(null);
-        } else {
-          setOrdersData(res as OrdersMetrics);
-          setUsersData(null);
-        }
+        applyFetchedMetrics(metric, res);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -98,7 +105,7 @@ export default function Metrics() {
     return () => {
       cancelled = true;
     };
-  }, [metric, period]);
+  }, [metric, period, applyFetchedMetrics]);
 
   useEffect(() => {
     function handleClick(event: MouseEvent) {
@@ -139,13 +146,7 @@ export default function Metrics() {
       metric === 'users_registered' ? getRegisteredUsersMetrics(period) : getOrdersMetrics(period);
     request
       .then((res) => {
-        if (metric === 'users_registered') {
-          setUsersData(res as RegisteredUsersMetrics);
-          setOrdersData(null);
-        } else {
-          setOrdersData(res as OrdersMetrics);
-          setUsersData(null);
-        }
+        applyFetchedMetrics(metric, res);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Error al cargar métricas');

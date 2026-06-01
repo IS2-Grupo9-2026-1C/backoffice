@@ -11,6 +11,19 @@ export interface RegisteredUsersMetrics {
   series: MetricsSeriesItem[];
 }
 
+export interface OrdersDistributionItem {
+  status: string;
+  count: number;
+}
+
+export interface OrdersMetrics {
+  total: number;
+  current_distribution: OrdersDistributionItem[];
+  period_days: number | null;
+  /** Daily order creations in the selected period (empty when no period). */
+  series: MetricsSeriesItem[];
+}
+
 export async function getRegisteredUsersMetrics(
   period?: number | null,
 ): Promise<RegisteredUsersMetrics> {
@@ -19,4 +32,12 @@ export async function getRegisteredUsersMetrics(
   const qs = params.toString();
   const endpoint = `/metrics/users/registered${qs ? `?${qs}` : ''}`;
   return requestWithAuth<RegisteredUsersMetrics>(endpoint);
+}
+
+export async function getOrdersMetrics(period?: number | null): Promise<OrdersMetrics> {
+  const params = new URLSearchParams();
+  if (period !== undefined && period !== null) params.append('period', String(period));
+  const qs = params.toString();
+  const endpoint = `/metrics/orders${qs ? `?${qs}` : ''}`;
+  return requestWithAuth<OrdersMetrics>(endpoint);
 }

@@ -11,7 +11,6 @@ import {
   Bar,
   LineChart,
   Line,
-  Legend,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -20,23 +19,6 @@ import {
 } from 'recharts';
 
 type MetricType = 'users_registered' | 'orders_total';
-
-type OrdersTimelineRow = {
-  date: string;
-  [status: string]: string | number;
-};
-
-const STATUS_COLORS = [
-  '#4f46e5',
-  '#0ea5e9',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#14b8a6',
-  '#ec4899',
-  '#84cc16',
-];
 
 function formatStatusLabel(status: string): string {
   if (!status) return '';
@@ -160,45 +142,6 @@ export default function Metrics() {
     }
     return out;
   }, [usersData]);
-
-  const ordersStatuses = useMemo(() => {
-    if (!ordersData) return [] as string[];
-    const fromDistribution = ordersData.current_distribution.map((item) => item.status);
-    const missingFromSeries = ordersData.series
-      .map((item) => item.status)
-      .filter((status) => !fromDistribution.includes(status));
-    return [...fromDistribution, ...missingFromSeries];
-  }, [ordersData]);
-
-  const ordersStatusColors = useMemo(() => {
-    const map: Record<string, string> = {};
-    ordersStatuses.forEach((status, index) => {
-      map[status] = STATUS_COLORS[index % STATUS_COLORS.length];
-    });
-    return map;
-  }, [ordersStatuses]);
-
-  const ordersTimeline = useMemo(() => {
-    if (!ordersData) return [] as OrdersTimelineRow[];
-
-    const rowsByDate = new Map<string, OrdersTimelineRow>();
-    for (const item of ordersData.series) {
-      const current = rowsByDate.get(item.date) ?? { date: item.date };
-      current[item.status] = item.count;
-      rowsByDate.set(item.date, current);
-    }
-
-    const rows = Array.from(rowsByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
-    rows.forEach((row) => {
-      ordersStatuses.forEach((status) => {
-        if (row[status] === undefined) {
-          row[status] = 0;
-        }
-      });
-    });
-
-    return rows;
-  }, [ordersData, ordersStatuses]);
 
   const periodLabel =
     period === 7
@@ -515,7 +458,8 @@ export default function Metrics() {
 
           <div className="mb-8">
             <h2 className="mb-3 text-base font-semibold text-gray-900">
-              Distribución actual por estado
+              Distribución por estado
+              {ordersData.period_days != null ? ' (en el período)' : ''}
             </h2>
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -552,12 +496,12 @@ export default function Metrics() {
           {period !== null && (
             <div>
               <h2 className="mb-3 text-base font-semibold text-gray-900">
-                Órdenes creadas por día y estado
+                Órdenes creadas por día
               </h2>
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={ordersTimeline}
+                    data={ordersData.series}
                     margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -574,21 +518,9 @@ export default function Metrics() {
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                       }}
-                      formatter={(value, name) => [String(value), formatStatusLabel(String(name))]}
+                      formatter={(value) => [String(value), 'Órdenes creadas']}
                     />
-                    <Legend
-                      iconType="circle"
-                      formatter={(value) => formatStatusLabel(String(value))}
-                    />
-                    {ordersStatuses.map((status) => (
-                      <Bar
-                        key={status}
-                        dataKey={status}
-                        stackId="orders-status"
-                        fill={ordersStatusColors[status]}
-                        radius={[2, 2, 0, 0]}
-                      />
-                    ))}
+                    <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

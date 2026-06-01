@@ -16,17 +16,12 @@ export interface OrdersDistributionItem {
   count: number;
 }
 
-export interface OrdersSeriesItem {
-  date: string;
-  status: string;
-  count: number;
-}
-
 export interface OrdersMetrics {
   total: number;
   current_distribution: OrdersDistributionItem[];
   period_days: number | null;
-  series: OrdersSeriesItem[];
+  /** Daily order creations in the selected period (empty when no period). */
+  series: MetricsSeriesItem[];
 }
 
 export async function getRegisteredUsersMetrics(

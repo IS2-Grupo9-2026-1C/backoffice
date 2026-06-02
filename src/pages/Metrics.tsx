@@ -5,6 +5,8 @@ import {
   RegisteredUsersMetrics,
   getOrdersMetrics,
   OrdersMetrics,
+  getSalesMetrics,
+  SalesMetrics,
 } from '@/services/metrics';
 import {
   BarChart,
@@ -19,7 +21,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-type MetricType = 'users_registered' | 'orders_total';
+type MetricType = 'users_registered' | 'orders_total' | 'sales_ranking';
 
 const CHART_COLORS = [
   '#4f46e5',
@@ -49,6 +51,18 @@ function formatStatusLabel(status: string): string {
   return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
 }
 
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function productLabel(item: { item_id: string; title?: string | null }): string {
+  return item.title?.trim() || item.item_id;
+}
+
 export default function Metrics() {
   const [metric, setMetric] = useState<MetricType>('users_registered');
   const [period, setPeriod] = useState<number | null>(null);
@@ -58,31 +72,55 @@ export default function Metrics() {
   const metricRef = useRef<HTMLDivElement | null>(null);
   const [usersData, setUsersData] = useState<RegisteredUsersMetrics | null>(null);
   const [ordersData, setOrdersData] = useState<OrdersMetrics | null>(null);
+  const [salesData, setSalesData] = useState<SalesMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
 
-  const metricLabel = metric === 'users_registered' ? 'Usuarios registrados' : 'Ordenes totales';
+  const metricLabel =
+    metric === 'users_registered'
+      ? 'Usuarios registrados'
+      : metric === 'orders_total'
+        ? 'Ordenes totales'
+        : 'Ventas y ranking';
 
   const applyFetchedMetrics = useCallback(
-    (activeMetric: MetricType, data: RegisteredUsersMetrics | OrdersMetrics) => {
+    (
+      activeMetric: MetricType,
+      data: RegisteredUsersMetrics | OrdersMetrics | SalesMetrics,
+    ) => {
       if (activeMetric === 'users_registered') {
         setUsersData(data as RegisteredUsersMetrics);
         setOrdersData(null);
-      } else {
+        setSalesData(null);
+      } else if (activeMetric === 'orders_total') {
         setOrdersData(data as OrdersMetrics);
         setUsersData(null);
+        setSalesData(null);
+      } else {
+        setSalesData(data as SalesMetrics);
+        setUsersData(null);
+        setOrdersData(null);
       }
     },
     [],
   );
 
+  function fetchMetrics(activeMetric: MetricType, activePeriod: number | null) {
+    if (activeMetric === 'users_registered') {
+      return getRegisteredUsersMetrics(activePeriod);
+    }
+    if (activeMetric === 'orders_total') {
+      return getOrdersMetrics(activePeriod);
+    }
+    return getSalesMetrics(activePeriod);
+  }
+
   useEffect(() => {
     let cancelled = false;
     setError(null);
     setLoading(true);
-    const request =
-      metric === 'users_registered' ? getRegisteredUsersMetrics(period) : getOrdersMetrics(period);
+    const request = fetchMetrics(metric, period);
 
     request
       .then((res) => {
@@ -94,8 +132,10 @@ export default function Metrics() {
         setError(err instanceof Error ? err.message : 'Error al cargar métricas');
         if (metric === 'users_registered') {
           setUsersData(null);
-        } else {
+        } else if (metric === 'orders_total') {
           setOrdersData(null);
+        } else {
+          setSalesData(null);
         }
       })
       .finally(() => {
@@ -140,11 +180,15 @@ export default function Metrics() {
     setPeriodOpen(false);
   }
 
+  function handleMetricSelect(value: MetricType) {
+    setMetric(value);
+    setPeriod(null);
+    setMetricOpen(false);
+  }
+
   function handleRefresh() {
     setLoading(true);
-    const request =
-      metric === 'users_registered' ? getRegisteredUsersMetrics(period) : getOrdersMetrics(period);
-    request
+    fetchMetrics(metric, period)
       .then((res) => {
         applyFetchedMetrics(metric, res);
       })
@@ -176,6 +220,13 @@ export default function Metrics() {
     () => (ordersData ? ordersData.series.map(normalizeSeriesPoint) : []),
     [ordersData],
   );
+
+  const salesTopThree = useMemo(() => salesData?.top_products.slice(0, 3) ?? [], [salesData]);
+  const salesRest = useMemo(() => salesData?.top_products.slice(3) ?? [], [salesData]);
+  const podiumOrder = useMemo(() => {
+    const [first, second, third] = salesTopThree;
+    return [second, first, third].filter(Boolean);
+  }, [salesTopThree]);
 
   const periodLabel =
     period === 7
@@ -223,10 +274,7 @@ export default function Metrics() {
               <div className="py-1" role="listbox">
                 <button
                   type="button"
-                  onClick={() => {
-                    setMetric('users_registered');
-                    setMetricOpen(false);
-                  }}
+                  onClick={() => handleMetricSelect('users_registered')}
                   className={`w-full px-4 py-[10px] text-left text-sm transition-colors ${
                     metric === 'users_registered'
                       ? 'bg-gray-100 font-semibold text-indigo-600'
@@ -239,10 +287,7 @@ export default function Metrics() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setMetric('orders_total');
-                    setMetricOpen(false);
-                  }}
+                  onClick={() => handleMetricSelect('orders_total')}
                   className={`w-full px-4 py-[10px] text-left text-sm transition-colors ${
                     metric === 'orders_total'
                       ? 'bg-gray-100 font-semibold text-indigo-600'
@@ -252,6 +297,19 @@ export default function Metrics() {
                   aria-selected={metric === 'orders_total'}
                 >
                   Ordenes totales
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMetricSelect('sales_ranking')}
+                  className={`w-full px-4 py-[10px] text-left text-sm transition-colors ${
+                    metric === 'sales_ranking'
+                      ? 'bg-gray-100 font-semibold text-indigo-600'
+                      : 'text-gray-900 hover:bg-gray-50'
+                  }`}
+                  role="option"
+                  aria-selected={metric === 'sales_ranking'}
+                >
+                  Ventas y ranking
                 </button>
               </div>
             </div>
@@ -587,6 +645,105 @@ export default function Metrics() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {metric === 'sales_ranking' && salesData && (
+        <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6">
+          <div className="mb-8 flex items-end justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Monto transaccionado</div>
+              <div className="text-4xl font-bold text-gray-900">
+                {formatCurrency(salesData.total_amount)}
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              Período: {salesData.period_days ? `${salesData.period_days} días` : 'sin filtro'}
+            </div>
+          </div>
+
+          {salesData.top_products.length > 0 ? (
+            <>
+              {podiumOrder.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="mb-6 text-base font-semibold text-gray-900">Top 3 productos</h2>
+                  <div className="flex items-end justify-center gap-4 md:gap-8">
+                    {podiumOrder.map((item) => {
+                      const rank =
+                        salesTopThree.findIndex((candidate) => candidate.item_id === item.item_id) +
+                        1;
+                      const podiumHeight =
+                        rank === 1 ? 'h-44' : rank === 2 ? 'h-32' : 'h-24';
+                      const podiumColor =
+                        rank === 1
+                          ? 'bg-indigo-600'
+                          : rank === 2
+                            ? 'bg-indigo-500'
+                            : 'bg-indigo-400';
+
+                      return (
+                        <div
+                          key={item.item_id}
+                          className="flex w-full max-w-[220px] flex-col items-center"
+                        >
+                          <div className="mb-3 flex h-28 w-28 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                            {item.image_url ? (
+                              <img
+                                src={item.image_url}
+                                alt={productLabel(item)}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-xs font-semibold text-gray-400">#{rank}</span>
+                            )}
+                          </div>
+                          <p className="mb-1 line-clamp-2 min-h-[40px] text-center text-sm font-semibold text-gray-900">
+                            {productLabel(item)}
+                          </p>
+                          <p className="mb-3 text-sm text-gray-500">
+                            {item.units_sold} vendidos
+                          </p>
+                          <div
+                            className={`flex w-full items-end justify-center rounded-t-xl ${podiumHeight} ${podiumColor}`}
+                          >
+                            <span className="pb-3 text-2xl font-bold text-white">{rank}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {salesRest.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-base font-semibold text-gray-900">
+                    Resto del ranking
+                  </h2>
+                  <div className="divide-y divide-gray-100 rounded-xl border border-gray-200">
+                    {salesRest.map((item, index) => (
+                      <div
+                        key={item.item_id}
+                        className="flex items-center gap-4 px-4 py-3 text-sm"
+                      >
+                        <span className="w-8 font-semibold text-indigo-600">{index + 4}</span>
+                        <span className="flex-1 truncate text-gray-900">
+                          {productLabel(item)}
+                        </span>
+                        <span className="font-semibold text-gray-700">
+                          {item.units_sold} vendidos
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-gray-500">No hay ventas para este período.</p>
             </div>
           )}
         </section>

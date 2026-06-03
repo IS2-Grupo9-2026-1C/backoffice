@@ -67,6 +67,13 @@ function formatUnitsSold(count: number): string {
   return count === 1 ? '1 vendido' : `${count} vendidos`;
 }
 
+function formatSellerLabel(item: { seller_name?: string | null; seller_id?: string | null }): string | null {
+  if (item.seller_name?.trim()) {
+    return `Vendedor: ${item.seller_name.trim()}`;
+  }
+  return null;
+}
+
 export default function Metrics() {
   const [metric, setMetric] = useState<MetricType>('users_registered');
   const [period, setPeriod] = useState<number | null>(null);
@@ -680,6 +687,7 @@ export default function Metrics() {
                       const rank =
                         salesTopThree.findIndex((candidate) => candidate.item_id === item.item_id) +
                         1;
+                      const sellerLabel = formatSellerLabel(item);
                       const podiumHeight =
                         rank === 1 ? 'h-44' : rank === 2 ? 'h-32' : 'h-24';
                       const podiumColor =
@@ -708,6 +716,11 @@ export default function Metrics() {
                           <p className="mb-1 line-clamp-2 min-h-[40px] text-center text-sm font-semibold text-gray-900">
                             {productLabel(item)}
                           </p>
+                          {sellerLabel && (
+                            <p className="mb-1 line-clamp-1 text-center text-xs text-gray-500">
+                              {sellerLabel}
+                            </p>
+                          )}
                           <p className="mb-3 text-sm text-gray-500">
                             {formatUnitsSold(item.units_sold)}
                           </p>
@@ -729,20 +742,30 @@ export default function Metrics() {
                     Resto del ranking
                   </h2>
                   <div className="divide-y divide-gray-100 rounded-xl border border-gray-200">
-                    {salesRest.map((item, index) => (
+                    {salesRest.map((item, index) => {
+                      const sellerLabel = formatSellerLabel(item);
+                      return (
                       <div
                         key={item.item_id}
                         className="flex items-center gap-4 px-4 py-3 text-sm"
                       >
                         <span className="w-8 font-semibold text-indigo-600">{index + 4}</span>
-                        <span className="flex-1 truncate text-gray-900">
-                          {productLabel(item)}
-                        </span>
+                        <div className="min-w-0 flex-1">
+                          <span className="block truncate text-gray-900">
+                            {productLabel(item)}
+                          </span>
+                          {sellerLabel && (
+                            <span className="block truncate text-xs text-gray-500">
+                              {sellerLabel}
+                            </span>
+                          )}
+                        </div>
                         <span className="font-semibold text-gray-700">
                           {formatUnitsSold(item.units_sold)}
                         </span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

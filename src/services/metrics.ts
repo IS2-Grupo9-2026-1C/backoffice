@@ -29,6 +29,8 @@ export interface TopProductSalesItem {
   units_sold: number;
   title?: string | null;
   image_url?: string | null;
+  seller_id?: string | null;
+  seller_name?: string | null;
 }
 
 export interface SalesMetrics {

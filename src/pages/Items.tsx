@@ -1,9 +1,11 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import Button from '@/components/Button';
+import FilterDropdown from '@/components/FilterDropdown';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { CATEGORIES } from '@/constants/categories';
 import { ItemListItem, disableItemAsAdmin, enableItemAsAdmin, listItems } from '@/services/items';
 import { AdminUserLookupItem, lookupUsers } from '@/services/users';
+import { formatPrice, resolveUserDisplay } from '@/utils/format';
 
 const PAGE_SIZE = 8;
 
@@ -32,14 +34,6 @@ const ADMIN_STATUS_BADGE: Record<'enabled' | 'disabled', { label: string; classN
   disabled: { label: 'D', className: 'bg-red-100 text-red-700' },
 };
 
-function formatPrice(n: number): string {
-  return n.toLocaleString('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-  });
-}
-
 function formatCompactNumber(n: number, maxDigits = 10): string {
   const digits = Math.abs(Math.trunc(n)).toString();
   if (digits.length <= maxDigits) {
@@ -57,23 +51,10 @@ function formatCompactPrice(n: number): string {
   return `$ ${formatCompactNumber(n)}`;
 }
 
-function resolveSellerDisplay(
-  sellerId: string,
-  info: AdminUserLookupItem | undefined,
-): { name: string; email?: string } {
-  const name = info?.name?.trim();
-  const email = info?.email?.trim();
-  if (name) return { name, email };
-  if (email) return { name: email };
-  return { name: sellerId };
-}
-
 export default function Items() {
   const [list, setList] = useState<ItemListItem[]>([]);
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const categoryRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(1);
   const [refreshTick, setRefreshTick] = useState(0);
   const [total, setTotal] = useState(0);
@@ -131,31 +112,6 @@ export default function Items() {
     if (page > totalPages) setPage(1);
   }, [page, total]);
 
-  useEffect(() => {
-    function handleClick(event: MouseEvent) {
-      if (!categoryRef.current) return;
-      if (!categoryRef.current.contains(event.target as Node)) {
-        setCategoryOpen(false);
-      }
-    }
-
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setCategoryOpen(false);
-      }
-    }
-
-    if (categoryOpen) {
-      document.addEventListener('mousedown', handleClick);
-      document.addEventListener('keydown', handleKey);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClick);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [categoryOpen]);
-
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
 
@@ -167,7 +123,6 @@ export default function Items() {
   function handleCategorySelect(value: string) {
     setCategoryId(value);
     setPage(1);
-    setCategoryOpen(false);
   }
 
   async function handleToggleAdminDisabled(item: ItemListItem) {
@@ -186,9 +141,6 @@ export default function Items() {
       );
     }
   }
-
-  const selectedCategory = CATEGORIES.find((cat) => cat.id === categoryId);
-  const selectedCategoryLabel = selectedCategory?.label ?? 'Todos';
 
   return (
     <div className="flex flex-col gap-6 p-8">
@@ -228,66 +180,11 @@ export default function Items() {
       </section>
 
       <section className="flex items-center justify-between gap-4">
-        <div className="relative" ref={categoryRef}>
-          <button
-            type="button"
-            onClick={() => setCategoryOpen((open) => !open)}
-            className="flex min-w-[180px] items-center justify-between gap-3 rounded-[10px] border border-gray-200 bg-gray-50 px-4 py-[10px] text-sm text-gray-900 outline-none hover:bg-gray-100"
-            aria-haspopup="listbox"
-            aria-expanded={categoryOpen}
-          >
-            <span className="truncate">{selectedCategoryLabel}</span>
-            <svg
-              className="h-4 w-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-          {categoryOpen && (
-            <div className="absolute left-0 z-10 mt-2 w-full overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm">
-              <div className="max-h-64 overflow-auto py-1" role="listbox">
-                <button
-                  type="button"
-                  onClick={() => handleCategorySelect('')}
-                  className={`w-full px-4 py-[10px] text-left text-sm transition-colors ${
-                    categoryId === ''
-                      ? 'bg-gray-100 font-semibold text-indigo-600'
-                      : 'text-gray-900 hover:bg-gray-50'
-                  }`}
-                  role="option"
-                  aria-selected={categoryId === ''}
-                >
-                  Todos
-                </button>
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleCategorySelect(cat.id)}
-                    className={`w-full px-4 py-[10px] text-left text-sm transition-colors ${
-                      categoryId === cat.id
-                        ? 'bg-gray-100 font-semibold text-indigo-600'
-                        : 'text-gray-900 hover:bg-gray-50'
-                    }`}
-                    role="option"
-                    aria-selected={categoryId === cat.id}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <FilterDropdown
+          options={CATEGORIES}
+          selectedId={categoryId}
+          onSelect={handleCategorySelect}
+        />
 
         <p className="m-0 text-right text-xs text-gray-400">
           Pasá el cursor por cada indicador de estado para ver su significado.
@@ -319,7 +216,7 @@ export default function Items() {
           <tbody>
             {list.map((item) => {
               const seller = sellersById.get(item.sellerId);
-              const sellerDisplay = resolveSellerDisplay(item.sellerId, seller);
+              const sellerDisplay = resolveUserDisplay(item.sellerId, seller);
               const sellerBadge =
                 item.status === 'ACTIVE'
                   ? SELLER_STATUS_BADGE.active
@@ -331,12 +228,19 @@ export default function Items() {
                 ? ADMIN_STATUS_BADGE.disabled
                 : ADMIN_STATUS_BADGE.enabled;
               return (
-                <tr key={item.id} className="border-b border-gray-200">
+                <tr
+                  key={item.id}
+                  onClick={() => setDetailItemId(item.id)}
+                  className="cursor-pointer border-b border-gray-200 transition-colors hover:bg-gray-50"
+                >
                   <td className={tdClass}>
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <button
                         type="button"
-                        onClick={() => setDetailItemId(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDetailItemId(item.id);
+                        }}
                         className="truncate text-left text-gray-900 transition-colors hover:text-indigo-600"
                       >
                         {item.title}
@@ -384,7 +288,10 @@ export default function Items() {
                       variant={item.adminDisabled ? 'outlinePrimary' : 'outlineDanger'}
                       fullWidth
                       className="px-3 truncate"
-                      onClick={() => handleToggleAdminDisabled(item)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleAdminDisabled(item);
+                      }}
                     >
                       {item.adminDisabled ? 'Rehabilitar' : 'Deshabilitar'}
                     </Button>

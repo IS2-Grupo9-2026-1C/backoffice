@@ -5,6 +5,7 @@ import { logout } from '@/services/auth';
 const navItems = [
   { to: '/users', label: 'Usuarios' },
   { to: '/items', label: 'Items' },
+  { to: '/orders', label: 'Órdenes' },
   { to: '/metrics', label: 'Métricas' },
 ];
 

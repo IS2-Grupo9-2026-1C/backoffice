@@ -3,6 +3,7 @@ import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import { AdminItemDetail, ItemStatusEvent, getItemAdminDetail } from '@/services/items';
 import { AdminUserLookupItem, lookupUsers } from '@/services/users';
+import { formatDateTime, formatPrice } from '@/utils/format';
 
 interface Props {
   itemId: string;
@@ -13,24 +14,6 @@ const thClass =
   'px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.4px] text-gray-500 bg-gray-50 border-b border-gray-200';
 const tdClass = 'px-3 py-2 align-middle text-sm text-gray-900';
 const HISTORY_PAGE_SIZE = 5;
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function formatPrice(n: number): string {
-  return n.toLocaleString('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-  });
-}
 
 function formatHistoryValue(event: ItemStatusEvent, value?: string | null): string {
   if (!value) return '—';
@@ -189,7 +172,7 @@ export default function ItemDetailModal({ itemId, onClose }: Props) {
               </div>
               <div className="flex justify-between border-b border-gray-100 py-1">
                 <span className="text-gray-500">Creado</span>
-                <span className="font-medium text-gray-900">{formatDate(item.createdAt)}</span>
+                <span className="font-medium text-gray-900">{formatDateTime(item.createdAt)}</span>
               </div>
               <div className="col-span-2 flex justify-between border-b border-gray-100 py-1">
                 <span className="text-gray-500">Vendedor</span>
@@ -219,7 +202,7 @@ export default function ItemDetailModal({ itemId, onClose }: Props) {
                     <tbody>
                       {historySlice.map((ev, i) => (
                         <tr key={i} className="border-b border-gray-100 last:border-0">
-                          <td className={tdClass}>{formatDate(ev.changedAt)}</td>
+                          <td className={tdClass}>{formatDateTime(ev.changedAt)}</td>
                           <td className={tdClass}>{eventLabel(ev.eventType)}</td>
                           <td className={`${tdClass} text-gray-500`}>
                             {formatHistoryValue(ev, ev.toValue ?? ev.fromValue)}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ItemDetailModal from '@/components/ItemDetailModal';
 import Modal from '@/components/Modal';
 import { ORDER_STATUS_LABEL } from '@/constants/orderStatuses';
 import { OrderDetail } from '@/services/orders';
@@ -16,6 +17,7 @@ function statusLabel(id: string): string {
 
 export default function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
   const [usersById, setUsersById] = useState<Map<string, AdminUserLookupItem>>(new Map());
+  const [detailItemId, setDetailItemId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!order) return;
@@ -105,7 +107,15 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
               <tbody>
                 {order.items.map((it) => (
                   <tr key={it.itemId} className="border-b border-gray-200 last:border-b-0">
-                    <td className="px-4 py-2 text-gray-900">{it.title}</td>
+                    <td className="px-4 py-2 text-gray-900">
+                      <button
+                        type="button"
+                        onClick={() => setDetailItemId(it.itemId)}
+                        className="text-left text-gray-900 transition-colors hover:text-indigo-600"
+                      >
+                        {it.title}
+                      </button>
+                    </td>
                     <td className="px-4 py-2 text-right tabular-nums text-gray-900">
                       {it.quantity}
                     </td>
@@ -162,6 +172,10 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
           )}
         </section>
       </div>
+
+      {detailItemId && (
+        <ItemDetailModal itemId={detailItemId} onClose={() => setDetailItemId(null)} />
+      )}
     </Modal>
   );
 }

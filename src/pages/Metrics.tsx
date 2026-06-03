@@ -67,7 +67,10 @@ function formatUnitsSold(count: number): string {
   return count === 1 ? '1 vendido' : `${count} vendidos`;
 }
 
-function formatSellerLabel(item: { seller_name?: string | null; seller_id?: string | null }): string | null {
+function formatSellerLabel(item: {
+  seller_name?: string | null;
+  seller_id?: string | null;
+}): string | null {
   if (item.seller_name?.trim()) {
     return `Vendedor: ${item.seller_name.trim()}`;
   }
@@ -93,13 +96,10 @@ export default function Metrics() {
       ? 'Usuarios registrados'
       : metric === 'orders_total'
         ? 'Ordenes totales'
-        : 'Monto e ranking';
+        : 'Monto transaccionado y ranking';
 
   const applyFetchedMetrics = useCallback(
-    (
-      activeMetric: MetricType,
-      data: RegisteredUsersMetrics | OrdersMetrics | SalesMetrics,
-    ) => {
+    (activeMetric: MetricType, data: RegisteredUsersMetrics | OrdersMetrics | SalesMetrics) => {
       if (activeMetric === 'users_registered') {
         setUsersData(data as RegisteredUsersMetrics);
         setOrdersData(null);
@@ -688,8 +688,7 @@ export default function Metrics() {
                         salesTopThree.findIndex((candidate) => candidate.item_id === item.item_id) +
                         1;
                       const sellerLabel = formatSellerLabel(item);
-                      const podiumHeight =
-                        rank === 1 ? 'h-44' : rank === 2 ? 'h-32' : 'h-24';
+                      const podiumHeight = rank === 1 ? 'h-44' : rank === 2 ? 'h-32' : 'h-24';
                       const podiumColor =
                         rank === 1
                           ? 'bg-indigo-600'
@@ -738,32 +737,30 @@ export default function Metrics() {
 
               {salesRest.length > 0 && (
                 <div>
-                  <h2 className="mb-3 text-base font-semibold text-gray-900">
-                    Resto del ranking
-                  </h2>
+                  <h2 className="mb-3 text-base font-semibold text-gray-900">Resto del ranking</h2>
                   <div className="divide-y divide-gray-100 rounded-xl border border-gray-200">
                     {salesRest.map((item, index) => {
                       const sellerLabel = formatSellerLabel(item);
                       return (
-                      <div
-                        key={item.item_id}
-                        className="flex items-center gap-4 px-4 py-3 text-sm"
-                      >
-                        <span className="w-8 font-semibold text-indigo-600">{index + 4}</span>
-                        <div className="min-w-0 flex-1">
-                          <span className="block truncate text-gray-900">
-                            {productLabel(item)}
-                          </span>
-                          {sellerLabel && (
-                            <span className="block truncate text-xs text-gray-500">
-                              {sellerLabel}
+                        <div
+                          key={item.item_id}
+                          className="flex items-center gap-4 px-4 py-3 text-sm"
+                        >
+                          <span className="w-8 font-semibold text-indigo-600">{index + 4}</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="block truncate text-gray-900">
+                              {productLabel(item)}
                             </span>
-                          )}
+                            {sellerLabel && (
+                              <span className="block truncate text-xs text-gray-500">
+                                {sellerLabel}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-semibold text-gray-700">
+                            {formatUnitsSold(item.units_sold)}
+                          </span>
                         </div>
-                        <span className="font-semibold text-gray-700">
-                          {formatUnitsSold(item.units_sold)}
-                        </span>
-                      </div>
                       );
                     })}
                   </div>

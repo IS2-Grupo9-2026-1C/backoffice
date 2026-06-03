@@ -63,6 +63,10 @@ function productLabel(item: { item_id: string; title?: string | null }): string 
   return item.title?.trim() || item.item_id;
 }
 
+function formatUnitsSold(count: number): string {
+  return count === 1 ? '1 vendido' : `${count} vendidos`;
+}
+
 export default function Metrics() {
   const [metric, setMetric] = useState<MetricType>('users_registered');
   const [period, setPeriod] = useState<number | null>(null);
@@ -82,7 +86,7 @@ export default function Metrics() {
       ? 'Usuarios registrados'
       : metric === 'orders_total'
         ? 'Ordenes totales'
-        : 'Ventas y ranking';
+        : 'Monto e ranking';
 
   const applyFetchedMetrics = useCallback(
     (
@@ -309,7 +313,7 @@ export default function Metrics() {
                   role="option"
                   aria-selected={metric === 'sales_ranking'}
                 >
-                  Ventas y ranking
+                  Monto transaccionado y ranking
                 </button>
               </div>
             </div>
@@ -429,8 +433,8 @@ export default function Metrics() {
               </Button>
             </div>
           )}
-          {usersSeriesNormalized.length > 0 ? (
-            period !== null ? (
+          {period !== null ? (
+            usersSeriesNormalized.length > 0 ? (
               <>
                 <div className="mb-6 flex items-end justify-between">
                   <div>
@@ -520,13 +524,19 @@ export default function Metrics() {
                 </div>
               </>
             ) : (
-              <>
-                <div className="mb-4 flex items-end justify-between">
-                  <div>
-                    <div className="text-sm text-gray-500">Total registrados</div>
-                    <div className="text-4xl font-bold text-gray-900">{usersData.total}</div>
-                  </div>
+              <div className="flex items-center justify-center py-12">
+                <p className="text-sm text-gray-500">No hay datos para este período.</p>
+              </div>
+            )
+          ) : (
+            <>
+              <div className="mb-4 flex items-end justify-between">
+                <div>
+                  <div className="text-sm text-gray-500">Total registrados</div>
+                  <div className="text-4xl font-bold text-gray-900">{usersData.total}</div>
                 </div>
+              </div>
+              {usersSeriesNormalized.length > 0 ? (
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-[0.4px] text-gray-500">
@@ -545,12 +555,8 @@ export default function Metrics() {
                     ))}
                   </tbody>
                 </table>
-              </>
-            )
-          ) : (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-sm text-gray-500">No hay datos para este período.</p>
-            </div>
+              ) : null}
+            </>
           )}
         </section>
       )}
@@ -703,7 +709,7 @@ export default function Metrics() {
                             {productLabel(item)}
                           </p>
                           <p className="mb-3 text-sm text-gray-500">
-                            {item.units_sold} vendidos
+                            {formatUnitsSold(item.units_sold)}
                           </p>
                           <div
                             className={`flex w-full items-end justify-center rounded-t-xl ${podiumHeight} ${podiumColor}`}
@@ -733,7 +739,7 @@ export default function Metrics() {
                           {productLabel(item)}
                         </span>
                         <span className="font-semibold text-gray-700">
-                          {item.units_sold} vendidos
+                          {formatUnitsSold(item.units_sold)}
                         </span>
                       </div>
                     ))}

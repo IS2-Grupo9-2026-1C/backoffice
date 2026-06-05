@@ -15,6 +15,7 @@ const navItemActive = 'bg-gray-100 text-indigo-600 font-semibold';
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const logoSrc = `${import.meta.env.BASE_URL}bazaar.svg`;
 
   async function handleLogout() {
     await logout();
@@ -24,7 +25,7 @@ export default function Sidebar() {
   return (
     <aside className="flex w-48 flex-col gap-5 border-r border-gray-200 bg-white p-4">
       <div className="flex items-center gap-2 border-b border-gray-200 pb-4">
-        <img src="/bazaar.svg" alt="Bazaar" className="block h-[22px] w-auto" />
+        <img src={logoSrc} alt="Bazaar" className="block h-[22px] w-auto" />
         <span className="text-lg font-bold text-[#453de0]">Admin</span>
       </div>
 

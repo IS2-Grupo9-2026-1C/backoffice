@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import Button from '@/components/Button';
 import FilterDropdown from '@/components/FilterDropdown';
 import OrderDetailModal from '@/components/OrderDetailModal';
@@ -35,6 +35,7 @@ export default function Orders() {
 
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const openRequestRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,30 +100,36 @@ export default function Orders() {
     }
     setSearchError(null);
     setSearchLoading(true);
+    const requestId = ++openRequestRef.current;
     try {
       const detail = await getOrderById(id);
+      if (openRequestRef.current !== requestId) return;
       setSelectedOrder(detail);
     } catch (err) {
+      if (openRequestRef.current !== requestId) return;
       if (err instanceof ApiError && err.status === 404) {
         setSearchError('No se encontró ninguna orden con ese ID.');
       } else {
         setSearchError(err instanceof Error ? err.message : 'No se pudo obtener la orden.');
       }
     } finally {
-      setSearchLoading(false);
+      if (openRequestRef.current === requestId) setSearchLoading(false);
     }
   }
 
   async function handleRowClick(order: OrderListItem) {
     setSearchError(null);
     setOpeningId(order.id);
+    const requestId = ++openRequestRef.current;
     try {
       const detail = await getOrderById(order.id);
+      if (openRequestRef.current !== requestId) return;
       setSelectedOrder(detail);
     } catch (err) {
+      if (openRequestRef.current !== requestId) return;
       setError(err instanceof Error ? err.message : 'No se pudo obtener el detalle de la orden.');
     } finally {
-      setOpeningId(null);
+      if (openRequestRef.current === requestId) setOpeningId(null);
     }
   }
 

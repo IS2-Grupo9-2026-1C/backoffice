@@ -19,7 +19,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  type TooltipValueType,
 } from 'recharts';
 
 type MetricType = 'users_registered' | 'orders_total' | 'sales_ranking';

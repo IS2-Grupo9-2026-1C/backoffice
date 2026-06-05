@@ -28,6 +28,7 @@ export default function Users() {
   const [list, setList] = useState<UserListItem[]>([]);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [refreshTick, setRefreshTick] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,12 +63,12 @@ export default function Users() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [page, query]);
+  }, [page, query, refreshTick]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     if (page > totalPages) setPage(1);
-  }, [total]);
+  }, [page, total]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -124,14 +125,7 @@ export default function Users() {
           {total} resultado{total === 1 ? '' : 's'}
         </span>
         {loading && <span className="text-sm text-gray-400">Cargando...</span>}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setPage(1);
-            setQuery('');
-          }}
-        >
+        <Button size="sm" variant="outline" onClick={() => setRefreshTick((tick) => tick + 1)}>
           Actualizar
         </Button>
       </section>

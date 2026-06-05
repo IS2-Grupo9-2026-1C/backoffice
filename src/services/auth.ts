@@ -15,6 +15,8 @@ interface TokenResponse {
   token_type: string;
 }
 
+let refreshPromise: Promise<string> | null = null;
+
 async function saveTokens(tokens: TokenResponse): Promise<void> {
   await saveToken(tokens.access_token);
   await saveRefreshToken(tokens.refresh_token);
@@ -40,25 +42,38 @@ export async function login(email: string, password: string): Promise<TokenRespo
 }
 
 export async function refreshToken(): Promise<string> {
-  const refreshTokenValue = await getRefreshToken();
-  if (!refreshTokenValue) {
-    await clearTokens();
-    throw new ApiError(401, 'Unauthorized');
-  }
+  if (refreshPromise) return refreshPromise;
 
-  let data: TokenResponse;
+  refreshPromise = (async () => {
+    const refreshTokenValue = await getRefreshToken();
+    if (!refreshTokenValue) {
+      await clearTokens();
+      throw new ApiError(401, 'Unauthorized');
+    }
+
+    let data: TokenResponse;
+    try {
+      data = await request<TokenResponse>('/auth/admin/token/refresh', {
+        method: 'POST',
+        body: { refresh_token: refreshTokenValue },
+      });
+    } catch (error) {
+      await clearTokens();
+      if (error instanceof ApiError) {
+        throw new ApiError(401, 'Unauthorized');
+      }
+      throw error;
+    }
+
+    await saveTokens(data);
+    return data.access_token;
+  })();
+
   try {
-    data = await request<TokenResponse>('/auth/admin/token/refresh', {
-      method: 'POST',
-      body: { refresh_token: refreshTokenValue },
-    });
-  } catch (error) {
-    await clearTokens();
-    throw error;
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
   }
-
-  await saveTokens(data);
-  return data.access_token;
 }
 
 export async function requestWithAuth<T>(
@@ -79,7 +94,7 @@ export async function requestWithAuth<T>(
   try {
     return await request<T>(endpoint, { ...options, token });
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
       const refreshedToken = await refreshToken();
       return request<T>(endpoint, { ...options, token: refreshedToken });
     }

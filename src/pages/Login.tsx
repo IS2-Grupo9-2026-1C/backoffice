@@ -9,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const logoSrc = `${import.meta.env.BASE_URL}bazaar.svg`;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,7 +33,7 @@ export default function Login() {
       <div className="w-full max-w-[420px] rounded-2xl border border-gray-200 bg-white p-8 shadow-[0_1px_3px_rgba(17,24,39,0.04),0_4px_12px_rgba(17,24,39,0.04)]">
         <div className="mb-8">
           <div className="mb-1 flex items-center gap-2">
-            <img src="/bazaar.svg" alt="Bazaar" className="block h-8 w-auto" />
+            <img src={logoSrc} alt="Bazaar" className="block h-8 w-auto" />
             <span className="text-2xl font-bold text-[#453de0]">Admin</span>
           </div>
           <p className="m-0 text-base text-gray-500">Iniciá sesión para continuar</p>

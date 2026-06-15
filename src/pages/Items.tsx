@@ -1,6 +1,7 @@
 import { ChangeEvent, useEffect, useState } from 'react';
 import Button from '@/components/Button';
 import FilterDropdown from '@/components/FilterDropdown';
+import Pagination from '@/components/Pagination';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { CATEGORIES } from '@/constants/categories';
 import { ItemListItem, disableItemAsAdmin, enableItemAsAdmin, listItems } from '@/services/items';
@@ -324,29 +325,12 @@ export default function Items() {
         </table>
       </section>
 
-      <section className="flex items-center justify-end gap-4">
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-medium"
-          disabled={currentPage === 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          ← Anterior
-        </Button>
-        <span className="text-sm text-gray-500">
-          Página {currentPage} de {totalPages}
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-medium"
-          disabled={currentPage === totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Siguiente →
-        </Button>
-      </section>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPrev={() => setPage((p) => p - 1)}
+        onNext={() => setPage((p) => p + 1)}
+      />
 
       {detailItemId && (
         <ItemDetailModal itemId={detailItemId} onClose={() => setDetailItemId(null)} />

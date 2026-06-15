@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import Button from '@/components/Button';
 import FilterDropdown from '@/components/FilterDropdown';
 import OrderDetailModal from '@/components/OrderDetailModal';
+import Pagination from '@/components/Pagination';
 import { ORDER_STATUSES, ORDER_STATUS_LABEL } from '@/constants/orderStatuses';
 import { OrderDetail, OrderListItem, getOrderById, listOrders } from '@/services/orders';
 import { AdminUserLookupItem, lookupUsers } from '@/services/users';
@@ -261,29 +262,12 @@ export default function Orders() {
         </table>
       </section>
 
-      <section className="flex items-center justify-end gap-4">
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-medium"
-          disabled={currentPage === 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          ← Anterior
-        </Button>
-        <span className="text-sm text-gray-500">
-          Página {currentPage} de {totalPages}
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-medium"
-          disabled={currentPage === totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Siguiente →
-        </Button>
-      </section>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPrev={() => setPage((p) => p - 1)}
+        onNext={() => setPage((p) => p + 1)}
+      />
 
       <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
     </div>

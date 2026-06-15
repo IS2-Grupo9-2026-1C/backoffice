@@ -25,6 +25,7 @@ export default function Orders() {
   const [list, setList] = useState<OrderListItem[]>([]);
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
+  const [refreshTick, setRefreshTick] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +73,7 @@ export default function Orders() {
     return () => {
       cancelled = true;
     };
-  }, [page, status]);
+  }, [page, status, refreshTick]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -158,6 +159,9 @@ export default function Orders() {
             {total} resultado{total === 1 ? '' : 's'}
           </span>
           {loading && <span className="text-sm text-gray-400">Cargando...</span>}
+          <Button size="sm" variant="outline" onClick={() => setRefreshTick((tick) => tick + 1)}>
+            Actualizar
+          </Button>
         </form>
         {searchError && <p className="m-0 text-sm text-red-600">{searchError}</p>}
       </section>

@@ -1,41 +1,38 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { AUTH_CHANGE_EVENT, getToken } from '@/storage/token';
 import { useEffect, useState } from 'react';
+import { AUTH_CHANGE_EVENT, isAuthenticated } from '@/storage/token';
+import { initAuth } from '@/services/auth';
+
+type AuthStatus = 'checking' | 'authed' | 'anon';
 
 export default function ProtectedRoute() {
-  const [token, setToken] = useState<string | null | undefined>(undefined);
+  const [status, setStatus] = useState<AuthStatus>(() =>
+    isAuthenticated() ? 'authed' : 'checking',
+  );
 
   useEffect(() => {
     let active = true;
 
-    const syncToken = () => {
-      getToken().then((next) => {
-        if (active) setToken(next);
+    if (isAuthenticated()) {
+      setStatus('authed');
+    } else {
+      initAuth().then((ok) => {
+        if (active) setStatus(ok ? 'authed' : 'anon');
       });
-    };
+    }
 
     const handleAuthChange = () => {
-      syncToken();
+      if (active) setStatus(isAuthenticated() ? 'authed' : 'anon');
     };
 
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === 'admin_access_token') {
-        syncToken();
-      }
-    };
-
-    syncToken();
     window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
-    window.addEventListener('storage', handleStorage);
-
     return () => {
       active = false;
       window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
-      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 
-  if (token === undefined) return null;
-  if (!token) return <Navigate to="/login" replace />;
+  if (status === 'checking') return null;
+  if (status === 'anon') return <Navigate to="/login" replace />;
   return <Outlet />;
 }

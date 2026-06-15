@@ -1,14 +1,16 @@
 import config from '@/config';
+import { getCsrfToken } from '@/storage/token';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 interface RequestOptions {
   method?: HttpMethod;
   body?: unknown;
-  token?: string;
   headers?: Record<string, string>;
   contentType?: 'json' | 'form';
 }
+
+const CSRF_BOOTSTRAP_PLACEHOLDER = 'bootstrap';
 
 export class ApiError extends Error {
   constructor(
@@ -21,7 +23,7 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, token, headers: extraHeaders, contentType = 'json' } = options;
+  const { method = 'GET', body, headers: extraHeaders, contentType = 'json' } = options;
 
   const headers: Record<string, string> = { ...(extraHeaders ?? {}) };
 
@@ -30,9 +32,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       contentType === 'form' ? 'application/x-www-form-urlencoded' : 'application/json';
   }
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  headers['X-CSRF-Token'] = getCsrfToken() ?? CSRF_BOOTSTRAP_PLACEHOLDER;
 
   let encodedBody: string | undefined;
   if (body && contentType === 'form') {
@@ -47,6 +47,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       method,
       headers,
       body: encodedBody,
+      credentials: 'include',
     });
   } catch (error) {
     if (error instanceof ApiError) throw error;

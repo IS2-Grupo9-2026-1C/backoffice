@@ -1,72 +1,49 @@
 import { ApiError, request } from './api';
-import { decodeJwt } from './jwt';
-import {
-  getRefreshToken,
-  getToken,
-  removeRefreshToken,
-  removeToken,
-  saveRefreshToken,
-  saveToken,
-} from '@/storage/token';
+import { clearSession, setSession } from '@/storage/token';
 
-interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
+interface AdminAuthResponse {
   token_type: string;
+  role: string;
+  csrf_token: string;
 }
 
-let refreshPromise: Promise<string> | null = null;
+let refreshPromise: Promise<void> | null = null;
 
-async function saveTokens(tokens: TokenResponse): Promise<void> {
-  await saveToken(tokens.access_token);
-  await saveRefreshToken(tokens.refresh_token);
-}
-
-async function clearTokens(): Promise<void> {
-  await removeToken();
-  await removeRefreshToken();
-}
-
-export async function login(email: string, password: string): Promise<TokenResponse> {
-  const data = await request<TokenResponse>('/auth/admin/token', {
+export async function login(email: string, password: string): Promise<void> {
+  const data = await request<AdminAuthResponse>('/auth/admin/token', {
     method: 'POST',
     body: { username: email, password },
     contentType: 'form',
   });
-  const claims = decodeJwt(data.access_token);
-  if (claims?.role !== 'admin') {
+
+  if (data.role !== 'admin') {
+    clearSession();
     throw new ApiError(403, 'Acceso denegado: se requiere rol admin');
   }
-  await saveTokens(data);
-  return data;
+
+  // Tokens are now httpOnly cookies; we only keep the CSRF token in memory.
+  setSession(data.csrf_token);
 }
 
-export async function refreshToken(): Promise<string> {
+export async function refreshSession(): Promise<void> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const refreshTokenValue = await getRefreshToken();
-    if (!refreshTokenValue) {
-      await clearTokens();
-      throw new ApiError(401, 'Unauthorized');
-    }
-
-    let data: TokenResponse;
+    let data: AdminAuthResponse;
     try {
-      data = await request<TokenResponse>('/auth/admin/token/refresh', {
+      // No body: the refresh credential travels in the httpOnly cookie.
+      data = await request<AdminAuthResponse>('/auth/admin/token/refresh', {
         method: 'POST',
-        body: { refresh_token: refreshTokenValue },
       });
     } catch (error) {
-      await clearTokens();
+      clearSession();
       if (error instanceof ApiError) {
         throw new ApiError(401, 'Unauthorized');
       }
       throw error;
     }
 
-    await saveTokens(data);
-    return data.access_token;
+    setSession(data.csrf_token);
   })();
 
   try {
@@ -85,23 +62,36 @@ export async function requestWithAuth<T>(
     contentType?: 'json' | 'form';
   } = {},
 ): Promise<T> {
-  const token = await getToken();
-  if (!token) {
-    await clearTokens();
-    throw new ApiError(401, 'Unauthorized');
-  }
-
   try {
-    return await request<T>(endpoint, { ...options, token });
+    return await request<T>(endpoint, options);
   } catch (error) {
     if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-      const refreshedToken = await refreshToken();
-      return request<T>(endpoint, { ...options, token: refreshedToken });
+      // Access cookie expired or CSRF token stale: refresh (rotates cookies + CSRF) and retry once.
+      await refreshSession();
+      return request<T>(endpoint, options);
     }
     throw error;
   }
 }
 
+/**
+ * Rebuild the session on app start / page reload from the httpOnly refresh cookie.
+ * Returns true when a valid session was restored.
+ */
+export async function initAuth(): Promise<boolean> {
+  try {
+    await refreshSession();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function logout(): Promise<void> {
-  await clearTokens();
+  try {
+    await request('/auth/logout', { method: 'POST' });
+  } catch {
+    // Revoke best-effort; clear local state regardless of network/server outcome.
+  }
+  clearSession();
 }

@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useState } from 'react';
 import Button from '@/components/Button';
+import Pagination from '@/components/Pagination';
 import { blockUser, listUsers, unblockUser, UserListItem } from '@/services/users';
 
 type UserStatus = 'active' | 'blocked';
@@ -206,29 +207,12 @@ export default function Users() {
         </table>
       </section>
 
-      <section className="flex items-center justify-end gap-4">
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-medium"
-          disabled={currentPage === 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          ← Anterior
-        </Button>
-        <span className="text-sm text-gray-500">
-          Página {currentPage} de {totalPages}
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-medium"
-          disabled={currentPage === totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Siguiente →
-        </Button>
-      </section>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPrev={() => setPage((p) => p - 1)}
+        onNext={() => setPage((p) => p + 1)}
+      />
     </div>
   );
 }

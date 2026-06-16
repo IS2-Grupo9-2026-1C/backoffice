@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import Button from '@/components/Button';
 import FilterDropdown from '@/components/FilterDropdown';
 import OrderDetailModal from '@/components/OrderDetailModal';
+import Pagination from '@/components/Pagination';
 import { ORDER_STATUSES, ORDER_STATUS_LABEL } from '@/constants/orderStatuses';
 import { OrderDetail, OrderListItem, getOrderById, listOrders } from '@/services/orders';
 import { AdminUserLookupItem, lookupUsers } from '@/services/users';
@@ -24,6 +25,7 @@ export default function Orders() {
   const [list, setList] = useState<OrderListItem[]>([]);
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
+  const [refreshTick, setRefreshTick] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export default function Orders() {
     return () => {
       cancelled = true;
     };
-  }, [page, status]);
+  }, [page, status, refreshTick]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -157,6 +159,9 @@ export default function Orders() {
             {total} resultado{total === 1 ? '' : 's'}
           </span>
           {loading && <span className="text-sm text-gray-400">Cargando...</span>}
+          <Button size="sm" variant="outline" onClick={() => setRefreshTick((tick) => tick + 1)}>
+            Actualizar
+          </Button>
         </form>
         {searchError && <p className="m-0 text-sm text-red-600">{searchError}</p>}
       </section>
@@ -261,29 +266,12 @@ export default function Orders() {
         </table>
       </section>
 
-      <section className="flex items-center justify-end gap-4">
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-medium"
-          disabled={currentPage === 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          ← Anterior
-        </Button>
-        <span className="text-sm text-gray-500">
-          Página {currentPage} de {totalPages}
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          className="font-medium"
-          disabled={currentPage === totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Siguiente →
-        </Button>
-      </section>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPrev={() => setPage((p) => p - 1)}
+        onNext={() => setPage((p) => p + 1)}
+      />
 
       <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
     </div>

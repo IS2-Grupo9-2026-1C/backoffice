@@ -16,12 +16,19 @@ export interface OrdersDistributionItem {
   count: number;
 }
 
+export interface CategoryOrdersCountItem {
+  category: string;
+  count: number;
+}
+
 export interface OrdersMetrics {
   total: number;
   current_distribution: OrdersDistributionItem[];
   period_days: number | null;
   /** Daily order creations in the selected period (empty when no period). */
   series: MetricsSeriesItem[];
+  /** Cantidad de órdenes agrupadas por categoría para el período. */
+  categories: CategoryOrdersCountItem[];
 }
 
 export interface TopProductSalesItem {
@@ -33,10 +40,19 @@ export interface TopProductSalesItem {
   seller_name?: string | null;
 }
 
+export interface CategorySalesAmountItem {
+  category: string;
+  /** Decimal serializado como string para no perder precisión en JSON. */
+  amount: string;
+}
+
 export interface SalesMetrics {
-  total_amount: number;
+  /** Decimal serializado como string para no perder precisión en JSON. */
+  total_amount: string;
   period_days: number | null;
   top_products: TopProductSalesItem[];
+  /** Monto transaccionado agrupado por categoría para el período. */
+  categories: CategorySalesAmountItem[];
 }
 
 export async function getRegisteredUsersMetrics(

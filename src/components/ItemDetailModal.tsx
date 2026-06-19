@@ -20,8 +20,8 @@ function formatHistoryValue(event: ItemStatusEvent, value?: string | null): stri
   const normalized = String(value).toUpperCase();
 
   if (event.eventType === 'seller_status_change') {
-    if (normalized === 'ACTIVE' || normalized === 'ENABLED') return 'Habilitado';
-    if (normalized === 'DISABLED') return 'Deshabilitado';
+    if (normalized === 'ACTIVE' || normalized === 'ENABLED') return 'Despausado';
+    if (normalized === 'DISABLED') return 'Pausado';
   }
 
   if (event.eventType === 'admin_status_change') {
@@ -153,21 +153,21 @@ export default function ItemDetailModal({ itemId, onClose }: Props) {
                 <span className="font-medium text-gray-900">{item.stock}</span>
               </div>
               <div className="flex justify-between border-b border-gray-100 py-1">
-                <span className="text-gray-500">Estado vendedor</span>
+                <span className="text-gray-500">Pausado por vendedor</span>
                 <span className="font-medium text-gray-900">
-                  {item.status === 'ACTIVE' ? 'Habilitado' : 'Deshabilitado'}
+                  {item.status === 'DISABLED' ? 'Sí' : 'No'}
                 </span>
               </div>
               <div className="flex justify-between border-b border-gray-100 py-1">
-                <span className="text-gray-500">Estado admin</span>
+                <span className="text-gray-500">Deshabilitado por admin</span>
                 <span className="font-medium text-gray-900">
-                  {item.adminDisabled ? 'Deshabilitado' : 'Habilitado'}
+                  {item.adminDisabled ? 'Sí' : 'No'}
                 </span>
               </div>
               <div className="flex justify-between border-b border-gray-100 py-1">
                 <span className="text-gray-500">Vendedor bloqueado</span>
                 <span className="font-medium text-gray-900">
-                  {item.sellerBlocked ? 'Bloqueado' : 'Desbloqueado'}
+                  {item.sellerBlocked ? 'Sí' : 'No'}
                 </span>
               </div>
               <div className="flex justify-between border-b border-gray-100 py-1">

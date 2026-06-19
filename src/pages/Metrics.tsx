@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import Button from '@/components/Button';
+import { CATEGORIES } from '@/constants/categories';
 import {
   getRegisteredUsersMetrics,
   RegisteredUsersMetrics,
@@ -51,12 +52,13 @@ function formatStatusLabel(status: string): string {
   return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
 }
 
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number | string): string {
+  const numericAmount = typeof amount === 'string' ? Number(amount) : amount;
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(Number.isFinite(numericAmount) ? numericAmount : 0);
 }
 
 function productLabel(item: { item_id: string; title?: string | null }): string {
@@ -75,6 +77,38 @@ function formatSellerLabel(item: {
     return `Vendedor: ${item.seller_name.trim()}`;
   }
   return null;
+}
+
+function categoryLabel(id: string): string {
+  return CATEGORIES.find((category) => category.id === id)?.label ?? id;
+}
+
+function CategoryBreakdownRow({
+  title,
+  items,
+}: {
+  title: string;
+  items: { category: string; value: string }[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mb-8">
+      <h2 className="mb-3 text-base font-semibold text-gray-900">{title}</h2>
+      <div className="flex flex-wrap gap-3">
+        {items.map((item) => (
+          <div
+            key={item.category}
+            className="flex min-w-[140px] flex-1 flex-col rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+          >
+            <span className="text-xs font-semibold uppercase tracking-[0.4px] text-gray-500">
+              {categoryLabel(item.category)}
+            </span>
+            <span className="mt-1 text-lg font-bold text-gray-900">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function Metrics() {
@@ -580,6 +614,14 @@ export default function Metrics() {
             </div>
           </div>
 
+          <CategoryBreakdownRow
+            title="Órdenes por categoría"
+            items={(ordersData.categories ?? []).map((category) => ({
+              category: category.category,
+              value: String(category.count),
+            }))}
+          />
+
           <div className="mb-8">
             <h2 className="mb-3 text-base font-semibold text-gray-900">Distribución por estado</h2>
             <div className="h-80 w-full min-h-[320px]">
@@ -676,6 +718,14 @@ export default function Metrics() {
               Período: {salesData.period_days ? `${salesData.period_days} días` : 'sin filtro'}
             </div>
           </div>
+
+          <CategoryBreakdownRow
+            title="Monto por categoría"
+            items={(salesData.categories ?? []).map((category) => ({
+              category: category.category,
+              value: formatCurrency(category.amount),
+            }))}
+          />
 
           {salesData.top_products.length > 0 ? (
             <>

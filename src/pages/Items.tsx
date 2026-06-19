@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent, ReactNode, useEffect, useState } from 'react';
 import Button from '@/components/Button';
 import FilterDropdown from '@/components/FilterDropdown';
 import Pagination from '@/components/Pagination';
@@ -17,23 +17,80 @@ const tdCompactClass = 'px-1 py-2 align-middle text-gray-900';
 const tdNumericClass = 'px-2 py-3 align-middle text-gray-900';
 const thNumericClass =
   'px-2 py-[10px] text-left text-xs font-semibold uppercase tracking-[0.4px] text-gray-500 bg-gray-50 border-b border-gray-200';
-const badgeClass =
-  'inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold';
+const chipClass =
+  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap';
 
-const SELLER_STATUS_BADGE: Record<'active' | 'disabled', { label: string; className: string }> = {
-  active: { label: 'H', className: 'bg-emerald-100 text-emerald-700' },
-  disabled: { label: 'D', className: 'bg-red-100 text-red-700' },
+const iconProps = {
+  width: 13,
+  height: 13,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2.4,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
 };
 
-const SELLER_BLOCKED_BADGE: Record<'yes' | 'no', { label: string; className: string }> = {
-  yes: { label: 'D', className: 'bg-red-100 text-red-700' },
-  no: { label: 'H', className: 'bg-emerald-100 text-emerald-700' },
+const CheckIcon = (
+  <svg {...iconProps} strokeWidth={3}>
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+);
+
+const PauseIcon = (
+  <svg {...iconProps}>
+    <path d="M9 5v14M15 5v14" />
+  </svg>
+);
+
+const UserIcon = (
+  <svg {...iconProps}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4.5 20c.8-3.6 3.9-5.5 7.5-5.5s6.7 1.9 7.5 5.5" />
+  </svg>
+);
+
+const ShieldIcon = (
+  <svg {...iconProps}>
+    <path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z" />
+  </svg>
+);
+
+type ReasonKey = 'admin' | 'cuenta' | 'vendedor';
+
+const REASON_META: Record<ReasonKey, { label: string; className: string; icon: ReactNode }> = {
+  vendedor: {
+    label: 'Pausado por el vendedor',
+    className: 'bg-amber-100 text-amber-800 border border-amber-200',
+    icon: PauseIcon,
+  },
+  cuenta: {
+    label: 'Cuenta bloqueada',
+    className: 'bg-red-100 text-red-700 border border-red-200',
+    icon: UserIcon,
+  },
+  admin: {
+    label: 'Deshabilitado por admin',
+    className: 'bg-gray-100 text-gray-600 border border-gray-200',
+    icon: ShieldIcon,
+  },
 };
 
-const ADMIN_STATUS_BADGE: Record<'enabled' | 'disabled', { label: string; className: string }> = {
-  enabled: { label: 'H', className: 'bg-emerald-100 text-emerald-700' },
-  disabled: { label: 'D', className: 'bg-red-100 text-red-700' },
-};
+// Resume el estado de un ítem en un motivo principal. Prioridad: admin > cuenta > vendedor.
+function getStatusSummary(item: ItemListItem) {
+  const isOk = item.status === 'ACTIVE' && !item.sellerBlocked && !item.adminDisabled;
+  const reasons: ReasonKey[] = [];
+  if (item.adminDisabled) reasons.push('admin');
+  if (item.sellerBlocked) reasons.push('cuenta');
+  if (item.status === 'DISABLED') reasons.push('vendedor');
+  const [primary, ...extra] = reasons;
+  return {
+    isOk,
+    primary,
+    extraCount: extra.length,
+    extraTitle: extra.map((reason) => REASON_META[reason].label).join(' · '),
+  };
+}
 
 function formatCompactNumber(n: number, maxDigits = 10): string {
   const digits = Math.abs(Math.trunc(n)).toString();
@@ -164,20 +221,6 @@ export default function Items() {
         <Button size="sm" variant="outline" onClick={() => setRefreshTick((tick) => tick + 1)}>
           Actualizar
         </Button>
-        <div className="ml-auto flex items-center gap-3 text-xs text-gray-500">
-          <span className="inline-flex items-center gap-2">
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700">
-              H
-            </span>
-            Habilitado
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-[11px] font-semibold text-red-700">
-              D
-            </span>
-            Deshabilitado
-          </span>
-        </div>
       </section>
 
       <section className="flex items-center justify-between gap-4">
@@ -188,9 +231,9 @@ export default function Items() {
         />
 
         <p className="m-0 text-right text-xs text-gray-400">
-          Pasá el cursor por cada indicador de estado para ver su significado.
+          El ítem no se mostrará en la app si su estado es distinto de "Visible" o si su stock es 0.
           <br />
-          Si alguno está deshabilitado, el item no se mostrará en la app.
+          Hacé click en un ítem para ver más detalles y moderar su estado.
         </p>
       </section>
 
@@ -202,7 +245,7 @@ export default function Items() {
             <col />
             <col className="w-[140px]" />
             <col className="w-[120px]" />
-            <col className="w-[96px]" />
+            <col className="w-[230px]" />
             <col className="w-[120px]" />
           </colgroup>
           <thead>
@@ -218,16 +261,7 @@ export default function Items() {
             {list.map((item) => {
               const seller = sellersById.get(item.sellerId);
               const sellerDisplay = resolveUserDisplay(item.sellerId, seller);
-              const sellerBadge =
-                item.status === 'ACTIVE'
-                  ? SELLER_STATUS_BADGE.active
-                  : SELLER_STATUS_BADGE.disabled;
-              const blockedBadge = item.sellerBlocked
-                ? SELLER_BLOCKED_BADGE.yes
-                : SELLER_BLOCKED_BADGE.no;
-              const adminBadge = item.adminDisabled
-                ? ADMIN_STATUS_BADGE.disabled
-                : ADMIN_STATUS_BADGE.enabled;
+              const status = getStatusSummary(item);
               return (
                 <tr
                   key={item.id}
@@ -261,27 +295,30 @@ export default function Items() {
                   >
                     {formatCompactNumber(item.stock)}
                   </td>
-                  <td className={`${tdCompactClass} pr-0`}>
-                    <div className="flex items-center justify-end gap-1">
+                  <td className={tdClass}>
+                    {status.isOk ? (
                       <span
-                        className={`${badgeClass} ${sellerBadge.className}`}
-                        title="Estado vendedor: Indica si el vendedor tiene el item habilitado o no"
+                        className={`${chipClass} bg-emerald-100 text-emerald-700 border border-emerald-200`}
                       >
-                        {sellerBadge.label}
+                        {CheckIcon}
+                        Visible
                       </span>
-                      <span
-                        className={`${badgeClass} ${blockedBadge.className}`}
-                        title="Vendedor bloqueado: Indica si el vendedor esta bloqueado"
-                      >
-                        {blockedBadge.label}
-                      </span>
-                      <span
-                        className={`${badgeClass} ${adminBadge.className}`}
-                        title="Estado admin: Indica si el item fue deshabilitado por un administrador"
-                      >
-                        {adminBadge.label}
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span className={`${chipClass} ${REASON_META[status.primary].className}`}>
+                          {REASON_META[status.primary].icon}
+                          {REASON_META[status.primary].label}
+                        </span>
+                        {status.extraCount > 0 && (
+                          <span
+                            className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-2 py-1 text-xs font-bold text-gray-500"
+                            title={status.extraTitle}
+                          >
+                            +{status.extraCount}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className={`${tdCompactClass} pl-0 text-left whitespace-nowrap`}>
                     <Button

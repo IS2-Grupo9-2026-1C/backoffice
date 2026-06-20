@@ -37,7 +37,7 @@ jobs:
         env:
           VITE_ENV: production
           VITE_BASE_PATH: /backoffice/
-          VITE_API_URL: https://gateway-api-ih4e.onrender.com
+          VITE_API_URL: https://gateway-api-1j5h.onrender.com
 
       - name: Add SPA fallback
         run: cp dist/index.html dist/404.html

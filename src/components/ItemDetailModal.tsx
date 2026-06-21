@@ -68,6 +68,7 @@ export default function ItemDetailModal({ itemId, onClose }: Props) {
   const [seller, setSeller] = useState<AdminUserLookupItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
   const [historyPage, setHistoryPage] = useState(1);
 
   const totalHistoryPages = item
@@ -105,7 +106,7 @@ export default function ItemDetailModal({ itemId, onClose }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [itemId]);
+  }, [itemId, retryTick]);
 
   useEffect(() => {
     setHistoryPage(1);
@@ -121,7 +122,18 @@ export default function ItemDetailModal({ itemId, onClose }: Props) {
     <Modal onClose={onClose}>
       <div className="flex flex-col gap-6 p-6 pt-10">
         {loading && <p className="text-sm text-gray-500">Cargando...</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => setRetryTick((t) => t + 1)}
+              className="font-semibold underline underline-offset-2 hover:text-red-900"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
 
         {item && (
           <>

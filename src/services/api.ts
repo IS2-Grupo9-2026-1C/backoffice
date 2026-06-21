@@ -3,11 +3,14 @@ import { getCsrfToken } from '@/storage/token';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
+const DEFAULT_TIMEOUT_MS = 15000;
+
 interface RequestOptions {
   method?: HttpMethod;
   body?: unknown;
   headers?: Record<string, string>;
   contentType?: 'json' | 'form';
+  timeoutMs?: number;
 }
 
 const CSRF_BOOTSTRAP_PLACEHOLDER = 'bootstrap';
@@ -23,7 +26,13 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, headers: extraHeaders, contentType = 'json' } = options;
+  const {
+    method = 'GET',
+    body,
+    headers: extraHeaders,
+    contentType = 'json',
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  } = options;
 
   const headers: Record<string, string> = { ...(extraHeaders ?? {}) };
 
@@ -41,6 +50,9 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     encodedBody = JSON.stringify(body);
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
   let response: Response;
   try {
     response = await fetch(`${config.apiUrl}${endpoint}`, {
@@ -48,13 +60,19 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       headers,
       body: encodedBody,
       credentials: 'include',
+      signal: controller.signal,
     });
   } catch (error) {
     if (error instanceof ApiError) throw error;
+    if (controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')) {
+      throw new ApiError(504, 'La conexión tardó demasiado. Intentá de nuevo.');
+    }
     throw new ApiError(
       0,
       error instanceof TypeError ? `Network error: ${error.message}` : 'Unknown network error',
     );
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!response.ok) {

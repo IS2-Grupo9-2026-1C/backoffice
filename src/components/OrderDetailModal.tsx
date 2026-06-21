@@ -17,6 +17,8 @@ function statusLabel(id: string): string {
 
 export default function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
   const [usersById, setUsersById] = useState<Map<string, AdminUserLookupItem>>(new Map());
+  const [usersError, setUsersError] = useState(false);
+  const [usersRetryTick, setUsersRetryTick] = useState(0);
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,17 +30,21 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
     for (const h of order.history) {
       if (h.changedBy) ids.add(h.changedBy);
     }
+    setUsersError(false);
     lookupUsers(Array.from(ids))
       .then((resolved) => {
         if (!cancelled) setUsersById(resolved);
       })
       .catch(() => {
-        if (!cancelled) setUsersById(new Map());
+        if (!cancelled) {
+          setUsersById(new Map());
+          setUsersError(true);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [order]);
+  }, [order, usersRetryTick]);
 
   if (!order) return null;
 
@@ -48,6 +54,19 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
   return (
     <Modal onClose={onClose} title="Detalle de orden" subtitle={order.id} size="lg">
       <div className="flex flex-col gap-6 px-6 py-6">
+        {usersError && (
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+            <span>No se pudieron cargar algunos nombres de usuario; se muestran los IDs.</span>
+            <button
+              type="button"
+              onClick={() => setUsersRetryTick((t) => t + 1)}
+              className="font-semibold underline underline-offset-2 hover:text-amber-900"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
         <section className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="m-0 text-xs uppercase tracking-wide text-gray-500">Estado actual</p>

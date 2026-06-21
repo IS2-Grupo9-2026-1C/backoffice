@@ -37,7 +37,10 @@ export default function Orders() {
 
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
-  const openRequestRef = useRef(0);
+  const [openError, setOpenError] = useState<string | null>(null);
+  const lastClickedOrderRef = useRef<OrderListItem | null>(null);
+  const searchRequestRef = useRef(0);
+  const rowClickRequestRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,36 +105,40 @@ export default function Orders() {
     }
     setSearchError(null);
     setSearchLoading(true);
-    const requestId = ++openRequestRef.current;
+    const requestId = ++searchRequestRef.current;
     try {
       const detail = await getOrderById(id);
-      if (openRequestRef.current !== requestId) return;
+      if (searchRequestRef.current !== requestId) return;
       setSelectedOrder(detail);
     } catch (err) {
-      if (openRequestRef.current !== requestId) return;
+      if (searchRequestRef.current !== requestId) return;
       if (err instanceof ApiError && err.status === 404) {
         setSearchError('No se encontró ninguna orden con ese ID.');
       } else {
         setSearchError(err instanceof Error ? err.message : 'No se pudo obtener la orden.');
       }
     } finally {
-      if (openRequestRef.current === requestId) setSearchLoading(false);
+      if (searchRequestRef.current === requestId) setSearchLoading(false);
     }
   }
 
   async function handleRowClick(order: OrderListItem) {
     setSearchError(null);
+    setOpenError(null);
+    lastClickedOrderRef.current = order;
     setOpeningId(order.id);
-    const requestId = ++openRequestRef.current;
+    const requestId = ++rowClickRequestRef.current;
     try {
       const detail = await getOrderById(order.id);
-      if (openRequestRef.current !== requestId) return;
+      if (rowClickRequestRef.current !== requestId) return;
       setSelectedOrder(detail);
     } catch (err) {
-      if (openRequestRef.current !== requestId) return;
-      setError(err instanceof Error ? err.message : 'No se pudo obtener el detalle de la orden.');
+      if (rowClickRequestRef.current !== requestId) return;
+      setOpenError(
+        err instanceof Error ? err.message : 'No se pudo obtener el detalle de la orden.',
+      );
     } finally {
-      if (openRequestRef.current === requestId) setOpeningId(null);
+      if (rowClickRequestRef.current === requestId) setOpeningId(null);
     }
   }
 
@@ -178,6 +185,34 @@ export default function Orders() {
       </section>
 
       {error && list.length > 0 && <p className="m-0 text-sm text-red-600">{error}</p>}
+
+      {openError && (
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          <span>{openError}</span>
+          <div className="flex items-center gap-3">
+            {openingId === null && lastClickedOrderRef.current && (
+              <button
+                type="button"
+                onClick={() => {
+                  const order = lastClickedOrderRef.current;
+                  if (order) void handleRowClick(order);
+                }}
+                className="font-semibold underline underline-offset-2 hover:text-red-900"
+              >
+                Reintentar
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setOpenError(null)}
+              aria-label="Cerrar"
+              className="text-red-500 hover:text-red-700"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <table className="w-full table-fixed border-collapse text-sm">

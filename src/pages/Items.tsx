@@ -118,12 +118,15 @@ export default function Items() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [sellersById, setSellersById] = useState<Map<string, AdminUserLookupItem>>(new Map());
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
+    setActionError(null);
 
     const timer = setTimeout(() => {
       setLoading(true);
@@ -184,8 +187,13 @@ export default function Items() {
   }
 
   async function handleToggleAdminDisabled(item: ItemListItem) {
+    if (pendingIds.has(item.id)) return;
+    setActionError(null);
+    setPendingIds((prev) => new Set(prev).add(item.id));
+
+    const optimistic = !item.adminDisabled;
     setList((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, adminDisabled: !item.adminDisabled } : i)),
+      prev.map((i) => (i.id === item.id ? { ...i, adminDisabled: optimistic } : i)),
     );
     try {
       if (item.adminDisabled) {
@@ -193,10 +201,26 @@ export default function Items() {
       } else {
         await disableItemAsAdmin(item.id);
       }
-    } catch {
+    } catch (err) {
       setList((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, adminDisabled: item.adminDisabled } : i)),
+        prev.map((i) =>
+          i.id === item.id && i.adminDisabled === optimistic
+            ? { ...i, adminDisabled: item.adminDisabled }
+            : i,
+        ),
       );
+      const action = item.adminDisabled ? 'rehabilitar' : 'deshabilitar';
+      setActionError(
+        err instanceof Error
+          ? `No se pudo ${action} "${item.title}": ${err.message}`
+          : `No se pudo ${action} "${item.title}".`,
+      );
+    } finally {
+      setPendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
     }
   }
 
@@ -238,6 +262,20 @@ export default function Items() {
       </section>
 
       {error && list.length > 0 && <p className="m-0 text-sm text-red-600">{error}</p>}
+
+      {actionError && (
+        <p className="m-0 flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="shrink-0 font-bold text-red-500 transition-colors hover:text-red-700"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </p>
+      )}
 
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <table className="w-full table-fixed border-collapse text-sm">
@@ -326,12 +364,17 @@ export default function Items() {
                       variant={item.adminDisabled ? 'outlinePrimary' : 'outlineDanger'}
                       fullWidth
                       className="px-3 truncate"
+                      disabled={pendingIds.has(item.id)}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleToggleAdminDisabled(item);
                       }}
                     >
-                      {item.adminDisabled ? 'Rehabilitar' : 'Deshabilitar'}
+                      {pendingIds.has(item.id)
+                        ? 'Guardando...'
+                        : item.adminDisabled
+                          ? 'Rehabilitar'
+                          : 'Deshabilitar'}
                     </Button>
                   </td>
                 </tr>

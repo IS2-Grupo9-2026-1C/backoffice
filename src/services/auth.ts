@@ -1,4 +1,4 @@
-import { ApiError, request } from './api';
+import { ApiError, BlobResponse, request, requestBlob } from './api';
 import { clearSession, setSession } from '@/storage/token';
 
 interface AdminAuthResponse {
@@ -69,6 +69,18 @@ export async function requestWithAuth<T>(
       // Access cookie expired or CSRF token stale: refresh (rotates cookies + CSRF) and retry once.
       await refreshSession();
       return request<T>(endpoint, options);
+    }
+    throw error;
+  }
+}
+
+export async function requestBlobWithAuth(endpoint: string): Promise<BlobResponse> {
+  try {
+    return await requestBlob(endpoint);
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+      await refreshSession();
+      return requestBlob(endpoint);
     }
     throw error;
   }

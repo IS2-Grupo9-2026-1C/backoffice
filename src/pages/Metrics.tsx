@@ -8,6 +8,7 @@ import {
   OrdersMetrics,
   getSalesMetrics,
   SalesMetrics,
+  exportMetrics,
 } from '@/services/metrics';
 import {
   BarChart,
@@ -122,6 +123,7 @@ export default function Metrics() {
   const [ordersData, setOrdersData] = useState<OrdersMetrics | null>(null);
   const [salesData, setSalesData] = useState<SalesMetrics | null>(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
 
@@ -245,6 +247,33 @@ export default function Metrics() {
       });
   }
 
+  function handleExport() {
+    if (period === null) {
+      setError('Seleccioná un período para exportar');
+      return;
+    }
+
+    setError(null);
+    setExporting(true);
+    exportMetrics(period, metric)
+      .then(({ blob, filename }) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Error al exportar métricas');
+      })
+      .finally(() => {
+        setExporting(false);
+      });
+  }
+
   const usersSeriesNormalized = useMemo(
     () => (usersData ? usersData.series.map(normalizeSeriesPoint) : []),
     [usersData],
@@ -289,7 +318,7 @@ export default function Metrics() {
         <p className="m-0 text-base text-gray-500">Visualiza las métricas de tu plataforma.</p>
       </header>
 
-      <section className="flex items-center gap-4">
+      <section className="flex flex-wrap items-center gap-4">
         <div className="relative" ref={metricRef}>
           <button
             type="button"
@@ -447,6 +476,9 @@ export default function Metrics() {
 
         <Button size="sm" variant="outline" onClick={handleRefresh} disabled={loading}>
           {loading ? 'Cargando...' : 'Actualizar'}
+        </Button>
+        <Button size="sm" variant="primary" onClick={handleExport} disabled={exporting}>
+          {exporting ? 'Exportando...' : 'Exportar CSV'}
         </Button>
       </section>
 

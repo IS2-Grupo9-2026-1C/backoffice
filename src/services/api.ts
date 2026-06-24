@@ -90,3 +90,49 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
 }
+
+export interface BlobResponse {
+  blob: Blob;
+  filename: string | null;
+}
+
+export async function requestBlob(endpoint: string): Promise<BlobResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  let response: Response;
+
+  try {
+    response = await fetch(`${config.apiUrl}${endpoint}`, {
+      headers: {
+        'X-CSRF-Token': getCsrfToken() ?? CSRF_BOOTSTRAP_PLACEHOLDER,
+      },
+      credentials: 'include',
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new ApiError(504, 'La conexión tardó demasiado. Intentá de nuevo.');
+    }
+    throw new ApiError(
+      0,
+      error instanceof TypeError ? `Network error: ${error.message}` : 'Unknown network error',
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    let errorMessage = response.statusText || `HTTP error ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.detail ?? JSON.stringify(errorBody);
+    } catch {
+      // Keep the HTTP status text when the body is not JSON.
+    }
+    throw new ApiError(response.status, errorMessage);
+  }
+
+  const disposition = response.headers.get('Content-Disposition');
+  const filename = disposition?.match(/filename="?([^";]+)"?/i)?.[1] ?? null;
+  return { blob: await response.blob(), filename };
+}

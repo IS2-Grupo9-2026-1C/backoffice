@@ -3,11 +3,14 @@ import { getCsrfToken } from '@/storage/token';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
+const DEFAULT_TIMEOUT_MS = 15000;
+
 interface RequestOptions {
   method?: HttpMethod;
   body?: unknown;
   headers?: Record<string, string>;
   contentType?: 'json' | 'form';
+  timeoutMs?: number;
 }
 
 const CSRF_BOOTSTRAP_PLACEHOLDER = 'bootstrap';
@@ -23,7 +26,13 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, headers: extraHeaders, contentType = 'json' } = options;
+  const {
+    method = 'GET',
+    body,
+    headers: extraHeaders,
+    contentType = 'json',
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  } = options;
 
   const headers: Record<string, string> = { ...(extraHeaders ?? {}) };
 
@@ -41,6 +50,9 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     encodedBody = JSON.stringify(body);
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
   let response: Response;
   try {
     response = await fetch(`${config.apiUrl}${endpoint}`, {
@@ -48,13 +60,19 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       headers,
       body: encodedBody,
       credentials: 'include',
+      signal: controller.signal,
     });
   } catch (error) {
     if (error instanceof ApiError) throw error;
+    if (controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')) {
+      throw new ApiError(504, 'La conexión tardó demasiado. Intentá de nuevo.');
+    }
     throw new ApiError(
       0,
       error instanceof TypeError ? `Network error: ${error.message}` : 'Unknown network error',
     );
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!response.ok) {
@@ -71,4 +89,50 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
   const text = await response.text();
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
+}
+
+export interface BlobResponse {
+  blob: Blob;
+  filename: string | null;
+}
+
+export async function requestBlob(endpoint: string): Promise<BlobResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  let response: Response;
+
+  try {
+    response = await fetch(`${config.apiUrl}${endpoint}`, {
+      headers: {
+        'X-CSRF-Token': getCsrfToken() ?? CSRF_BOOTSTRAP_PLACEHOLDER,
+      },
+      credentials: 'include',
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new ApiError(504, 'La conexión tardó demasiado. Intentá de nuevo.');
+    }
+    throw new ApiError(
+      0,
+      error instanceof TypeError ? `Network error: ${error.message}` : 'Unknown network error',
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    let errorMessage = response.statusText || `HTTP error ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody.detail ?? JSON.stringify(errorBody);
+    } catch {
+      // Keep the HTTP status text when the body is not JSON.
+    }
+    throw new ApiError(response.status, errorMessage);
+  }
+
+  const disposition = response.headers.get('Content-Disposition');
+  const filename = disposition?.match(/filename="?([^";]+)"?/i)?.[1] ?? null;
+  return { blob: await response.blob(), filename };
 }

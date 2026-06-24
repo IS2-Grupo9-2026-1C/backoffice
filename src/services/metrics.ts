@@ -1,4 +1,4 @@
-import { requestWithAuth } from '@/services/auth';
+import { requestBlobWithAuth, requestWithAuth } from '@/services/auth';
 
 export interface MetricsSeriesItem {
   date: string;
@@ -55,6 +55,8 @@ export interface SalesMetrics {
   categories: CategorySalesAmountItem[];
 }
 
+export type ExportMetric = 'users_registered' | 'orders_total' | 'sales_ranking';
+
 export async function getRegisteredUsersMetrics(
   period?: number | null,
 ): Promise<RegisteredUsersMetrics> {
@@ -79,4 +81,21 @@ export async function getSalesMetrics(period?: number | null): Promise<SalesMetr
   const qs = params.toString();
   const endpoint = `/metrics/sales${qs ? `?${qs}` : ''}`;
   return requestWithAuth<SalesMetrics>(endpoint);
+}
+
+export async function exportMetrics(
+  period: number,
+  metric: ExportMetric,
+): Promise<{ blob: Blob; filename: string }> {
+  const params = new URLSearchParams({ period: String(period), metric });
+  const response = await requestBlobWithAuth(`/metrics/export?${params.toString()}`);
+  const fallbackNames: Record<ExportMetric, string> = {
+    users_registered: 'usuarios-registrados',
+    orders_total: 'ordenes-totales',
+    sales_ranking: 'monto-transaccionado-y-ranking',
+  };
+  return {
+    blob: response.blob,
+    filename: response.filename ?? `${fallbackNames[metric]}-${period}-dias.csv`,
+  };
 }

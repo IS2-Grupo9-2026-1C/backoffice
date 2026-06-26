@@ -1,12 +1,12 @@
 # Bazaar Admin
 
-Backoffice web para administrar la plataforma Bazaar (usuarios e items). Es la aplicación complementaria a la app React Native de [`../app`](../app).
+Backoffice web para administrar la plataforma Bazaar (usuarios, items, órdenes y métricas). Es la aplicación complementaria a la app React Native de [`../app`](../app).
 
-Stack: **Vite + React 18 + TypeScript + React Router v6**.
+Stack: **Vite + React 18 + TypeScript + React Router v6**, con **Tailwind CSS** para estilos y **Recharts** para los gráficos de métricas. Husky + lint-staged corren en el `pre-commit`.
 
 ## Requisitos
 
-- Node.js **>= 18**
+- Node.js **20** (versión usada en CI)
 - npm **>= 9**
 
 ## Instalación
@@ -17,6 +17,16 @@ npm install
 ```
 
 El paso `install` también configura [Husky](https://typicode.github.io/husky) (hook `pre-commit`) automáticamente vía el script `prepare`.
+
+## Variables de entorno
+
+Copiar `.env.example` a `.env` y ajustar según el entorno:
+
+| Variable         | Descripción                                            | Default local           |
+| ---------------- | ------------------------------------------------------ | ----------------------- |
+| `VITE_ENV`       | Entorno de ejecución (`local` / `production`).         | `local`                 |
+| `VITE_BASE_PATH` | Base path del bundle (en Pages se usa `/backoffice/`). | `/`                     |
+| `VITE_API_URL`   | URL del gateway que consume la app.                    | `http://127.0.0.1:8000` |
 
 ## Scripts disponibles
 
@@ -38,10 +48,10 @@ El proyecto está preparado para publicarse como GitHub Pages del repositorio
 `IS2-Grupo9-2026-1C/backoffice`, por lo que la URL final queda bajo
 `https://is2-grupo9-2026-1c.github.io/backoffice/`.
 
-El workflow `.github/workflows/deploy-pages.yml` corre en cada push a `main` o `develop`:
+El workflow `.github/workflows/deploy-pages.yml` corre en cada push a `master` (o manualmente vía `workflow_dispatch`):
 
 1. Instala dependencias con `npm ci`.
-2. Ejecuta `npm run build` con `VITE_ENV=production` y `VITE_BASE_PATH=/backoffice/`.
+2. Ejecuta `npm run build` con `VITE_ENV=production`, `VITE_BASE_PATH=/backoffice/` y `VITE_API_URL` apuntando al gateway de producción.
 3. Copia `dist/index.html` a `dist/404.html` para soportar refresh en rutas internas.
 4. Publica `dist/` usando GitHub Pages Actions.
 
@@ -50,7 +60,7 @@ Para activarlo en GitHub:
 1. Entrar al repo `backoffice`.
 2. Ir a `Settings > Pages`.
 3. En `Build and deployment`, elegir `Source: GitHub Actions`.
-4. Hacer push a `develop` o correr manualmente `Deploy backoffice to GitHub Pages`.
+4. Hacer push a `master` o correr manualmente `Deploy backoffice to GitHub Pages`.
 
 Si el backoffice queda publicado en otro repo o dominio, ajustar `VITE_BASE_PATH` en el workflow.
 Para validar el build local con la misma base de Pages:
@@ -62,9 +72,20 @@ VITE_ENV=production VITE_BASE_PATH=/backoffice/ npm run build
 También hay que permitir el origen de GitHub Pages en el gateway desplegado. Para esta URL, el
 origin CORS es `https://is2-grupo9-2026-1c.github.io` (sin `/backoffice`).
 
-## Login
+## Autenticación
 
-El login usa el gateway (`/auth/admin/token`) y guarda access/refresh tokens en `localStorage`. El listado de usuarios se consume desde `GET /users` via gateway.
+El login usa el endpoint de admin del gateway. Las rutas internas quedan detrás de un guard que exige sesión activa.
+
+Los **access y refresh tokens se manejan como cookies `httpOnly`** que setea el backend. El navegador las envía automáticamente en cada request.
+
+Para protegerse de CSRF se usa el patrón **double-submit**: el backend devuelve un token CSRF en el login, que el frontend guarda **solo en memoria** y reenvía en un header en cada request. Como vive en memoria, al refrescar la página se vuelve a inicializar la sesión: si el access expiró o el token CSRF quedó desactualizado, el cliente rota las cookies y el CSRF, y reintenta una vez.
+
+## Páginas
+
+- **Users** (`/users`): listado y bloqueo/desbloqueo de usuarios (`GET /users` vía gateway).
+- **Items** (`/items`): listado y disable/enable de publicaciones (`GET /admin/items`).
+- **Orders** (`/orders`): listado de órdenes vía gateway.
+- **Metrics** (`/metrics`): gráficos (Recharts) de usuarios registrados, órdenes y ranking de ventas, con filtro por período. Incluye exportación a CSV (botón **Exportar CSV** → `GET /metrics/export`) y manejo de errores en pantalla con botón **Actualizar** para reintentar.
 
 ## Linter y formato
 
@@ -80,6 +101,6 @@ git commit --no-verify -m "..."
 
 ## Notas
 
-- Usuarios se obtienen del gateway; items siguen mockeados en memoria y sus cambios se pierden al refrescar.
+- Usuarios, items, órdenes y métricas se consumen del gateway.
 - La paleta y el logo replican los de la app React Native para mantener consistencia de marca.
 - El bloqueo/desbloqueo de usuarios se hace via API (admins no son usuarios del marketplace).
